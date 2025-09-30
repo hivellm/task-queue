@@ -4,7 +4,7 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 #![allow(unused_mut)]
-#![allow(snake_case)]
+#![allow(non_snake_case)]
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
