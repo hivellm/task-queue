@@ -312,9 +312,10 @@ impl TaskQueueMcpServer {
             Ok(id) => match self.task_queue.get_task(id).await {
                 Ok(task) => {
                     let workflow_instructions = self.generate_workflow_instructions(&task);
+                    let effective_status = crate::server::TaskQueueServer::get_effective_task_status(&task);
                     let task_info = format!(
                         "Task: {}\nStatus: {:?}\nPriority: {:?}\nType: {:?}\n\n{}",
-                        task.name, task.status, task.priority, task.task_type, workflow_instructions
+                        task.name, effective_status, task.priority, task.task_type, workflow_instructions
                     );
                     Ok(CallToolResult::success(vec![
                         Content::text(task_info),
@@ -335,12 +336,13 @@ impl TaskQueueMcpServer {
                 } else {
                     let mut result = format!("Found {} tasks:\n", tasks.len());
                     for task in tasks.iter().take(10) {
+                        let effective_status = crate::server::TaskQueueServer::get_effective_task_status(task);
                         let workflow_status = task.development_workflow
                             .as_ref()
                             .map(|w| format!("{:?}", w.workflow_status))
                             .unwrap_or_else(|| "NotStarted".to_string());
                         result.push_str(&format!("- {} ({}): Status={:?}, Workflow={}\n",
-                            task.name, task.id, task.status, workflow_status));
+                            task.name, task.id, effective_status, workflow_status));
                     }
                     if tasks.len() > 10 {
                         result.push_str(&format!("... and {} more", tasks.len() - 10));

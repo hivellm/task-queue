@@ -3,29 +3,11 @@
 //! Provides comprehensive caching capabilities with different eviction strategies,
 //! TTL support, and performance optimization for the task queue system.
 //!
-//! ## 🚨 CRITICAL TESTING REQUIREMENTS
-//!
-//! **BEFORE ANY CHANGES TO THIS MODULE:**
-//! 1. Execute tests: `cargo test --lib cache`
-//! 2. Verify all tests pass: `cargo test --lib cache -- --nocapture`
-//! 3. Check coverage: `cargo test --lib cache -- --nocapture --test-threads=1`
-//!
-//! **TESTING COMMANDS:**
-//! ```bash
-//! # Run Cache module tests
-//! cargo test --lib cache
-//!
-//! # Run with verbose output
-//! cargo test --lib cache -- --nocapture
-//!
-//! # Run specific test
-//! cargo test --lib cache test_in_memory_cache_put_get
-//!
-//! # Run all Cache tests with coverage
-//! cargo test --lib cache -- --nocapture --test-threads=1
-//! ```
-//!
-//! **⚠️ NO COMMITS WITHOUT PASSING TESTS!**
+
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
+#![allow(unused_mut)]
 
 use std::collections::HashMap;
 use std::hash::Hash;

@@ -290,11 +290,11 @@
                                         <span class="stat-label">Total Tasks</span>
                                     </div>
                                     <div class="stat-item">
-                                        <span class="stat-number">{{ tasks.filter(t => t.status === 'Running').length }}</span>
+                                        <span class="stat-number">{{ tasks.filter(t => ['Running', 'Implementation', 'TestCreation', 'Testing', 'AIReview'].includes(t.status)).length }}</span>
                                         <span class="stat-label">Active</span>
                                     </div>
                                     <div class="stat-item">
-                                        <span class="stat-number">{{ tasks.filter(t => t.status === 'Completed').length }}</span>
+                                        <span class="stat-number">{{ tasks.filter(t => ['Completed', 'Finalized'].includes(t.status)).length }}</span>
                                         <span class="stat-label">Completed</span>
                                     </div>
                                 </div>
@@ -317,6 +317,13 @@
                                     <option value="Completed">Completed</option>
                                     <option value="Failed">Failed</option>
                                     <option value="Cancelled">Cancelled</option>
+                                    <option value="Planning">Planning</option>
+                                    <option value="Implementation">Implementation</option>
+                                    <option value="TestCreation">Test Creation</option>
+                                    <option value="Testing">Testing</option>
+                                    <option value="AIReview">AI Review</option>
+                                    <option value="Finalized">Finalized</option>
+                                    <option value="WaitingForDependencies">Waiting for Dependencies</option>
                                     <option value="AnalysisAndDocumentation">Analysis & Documentation</option>
                                     <option value="InDiscussion">In Discussion</option>
                                     <option value="InImplementation">In Implementation</option>

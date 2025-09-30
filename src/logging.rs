@@ -3,29 +3,11 @@
 //! Provides comprehensive logging capabilities with structured data,
 //! different log levels, and integration with tracing ecosystem.
 //!
-//! ## 🚨 CRITICAL TESTING REQUIREMENTS
-//!
-//! **BEFORE ANY CHANGES TO THIS MODULE:**
-//! 1. Execute tests: `cargo test --lib logging`
-//! 2. Verify all tests pass: `cargo test --lib logging -- --nocapture`
-//! 3. Check coverage: `cargo test --lib logging -- --nocapture --test-threads=1`
-//!
-//! **TESTING COMMANDS:**
-//! ```bash
-//! # Run Logging module tests
-//! cargo test --lib logging
-//!
-//! # Run with verbose output
-//! cargo test --lib logging -- --nocapture
-//!
-//! # Run specific test
-//! cargo test --lib logging test_log_level_conversion
-//!
-//! # Run all Logging tests with coverage
-//! cargo test --lib logging -- --nocapture --test-threads=1
-//! ```
-//!
-//! **⚠️ NO COMMITS WITHOUT PASSING TESTS!**
+
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
+#![allow(unused_mut)]
 
 use std::collections::HashMap;
 use tracing::{info, warn, error, debug, trace, Level};

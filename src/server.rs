@@ -375,28 +375,46 @@ impl TaskQueueServer {
         Ok(display_tasks)
     }
 
-    /// Get the effective task status considering workflow status
-    fn get_effective_task_status(task: &Task) -> TaskStatus {
+    /// Get the effective task status considering workflow status and current phase
+    pub fn get_effective_task_status(task: &Task) -> TaskStatus {
         // If task has an active development workflow, use workflow status
         if let Some(ref workflow) = task.development_workflow {
-            info!("Task {} has workflow status: {:?}", task.name, workflow.workflow_status);
-            match workflow.workflow_status {
-                crate::core::DevelopmentWorkflowStatus::NotStarted => TaskStatus::Planning,
-                crate::core::DevelopmentWorkflowStatus::Planning => TaskStatus::Planning,
-                crate::core::DevelopmentWorkflowStatus::InImplementation => TaskStatus::InImplementation,
-                crate::core::DevelopmentWorkflowStatus::TestCreation => TaskStatus::TestCreation,
-                crate::core::DevelopmentWorkflowStatus::Testing => TaskStatus::Testing,
-                crate::core::DevelopmentWorkflowStatus::AIReview => TaskStatus::AIReview,
-                crate::core::DevelopmentWorkflowStatus::Completed => {
-                    info!("Task {} workflow is completed, returning Completed status", task.name);
-                    TaskStatus::Completed
-                },
-                crate::core::DevelopmentWorkflowStatus::Failed => TaskStatus::Failed,
+            info!("Task {} has workflow status: {:?}, current phase: {:?}", task.name, workflow.workflow_status, task.current_phase);
+            
+            // If workflow is NotStarted but task has advanced phases, use current_phase
+            if workflow.workflow_status == crate::core::DevelopmentWorkflowStatus::NotStarted {
+                match task.current_phase {
+                    crate::core::TaskStatus::Planning => TaskStatus::Planning,
+                    crate::core::TaskStatus::Implementation => TaskStatus::Implementation,
+                    crate::core::TaskStatus::TestCreation => TaskStatus::TestCreation,
+                    crate::core::TaskStatus::Testing => TaskStatus::Testing,
+                    crate::core::TaskStatus::AIReview => TaskStatus::AIReview,
+                    crate::core::TaskStatus::Finalized => TaskStatus::Finalized,
+                    crate::core::TaskStatus::Completed => TaskStatus::Completed,
+                    crate::core::TaskStatus::Failed => TaskStatus::Failed,
+                    crate::core::TaskStatus::Cancelled => TaskStatus::Cancelled,
+                    _ => TaskStatus::Planning, // Default fallback
+                }
+            } else {
+                // Use workflow status for active workflows
+                match workflow.workflow_status {
+                    crate::core::DevelopmentWorkflowStatus::NotStarted => TaskStatus::Planning,
+                    crate::core::DevelopmentWorkflowStatus::Planning => TaskStatus::Planning,
+                    crate::core::DevelopmentWorkflowStatus::InImplementation => TaskStatus::Implementation,
+                    crate::core::DevelopmentWorkflowStatus::TestCreation => TaskStatus::TestCreation,
+                    crate::core::DevelopmentWorkflowStatus::Testing => TaskStatus::Testing,
+                    crate::core::DevelopmentWorkflowStatus::AIReview => TaskStatus::AIReview,
+                    crate::core::DevelopmentWorkflowStatus::Completed => {
+                        info!("Task {} workflow is completed, returning Completed status", task.name);
+                        TaskStatus::Completed
+                    },
+                    crate::core::DevelopmentWorkflowStatus::Failed => TaskStatus::Failed,
+                }
             }
         } else {
-            info!("Task {} has no workflow, using general status: {:?}", task.name, task.status);
-            // Fall back to the task's general status
-            task.status.clone()
+            info!("Task {} has no workflow, using current phase: {:?}", task.name, task.current_phase);
+            // Fall back to the task's current phase
+            task.current_phase.clone()
         }
     }
 

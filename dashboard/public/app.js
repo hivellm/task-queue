@@ -82,6 +82,7 @@ createApp({
                 { status: 'TestCreation', label: 'Test Creation', icon: 'fas fa-vial' },
                 { status: 'Testing', label: 'Testing', icon: 'fas fa-stethoscope' },
                 { status: 'AIReview', label: 'AI Review', icon: 'fas fa-brain' },
+                { status: 'Finalized', label: 'Finalized', icon: 'fas fa-check-circle' },
                 { status: 'Completed', label: 'Completed', icon: 'fas fa-check-circle' }
             ];
 
@@ -249,7 +250,13 @@ createApp({
                 'TestCreation': 'Test Creation',
                 'Testing': 'Testing',
                 'AIReview': 'AI Review',
-                'WaitingForDependencies': 'Waiting for Dependencies'
+                'Finalized': 'Finalized',
+                'WaitingForDependencies': 'Waiting for Dependencies',
+                'AnalysisAndDocumentation': 'Analysis & Documentation',
+                'InDiscussion': 'In Discussion',
+                'InImplementation': 'In Implementation',
+                'InReview': 'In Review',
+                'InTesting': 'In Testing'
             };
             return statusMap[status] || status;
         };
@@ -266,7 +273,13 @@ createApp({
                 'TestCreation': 'testing',
                 'Testing': 'testing',
                 'AIReview': 'review',
-                'WaitingForDependencies': 'pending'
+                'Finalized': 'completed',
+                'WaitingForDependencies': 'pending',
+                'AnalysisAndDocumentation': 'planning',
+                'InDiscussion': 'planning',
+                'InImplementation': 'implementation',
+                'InReview': 'review',
+                'InTesting': 'testing'
             };
             return classMap[status] || 'pending';
         };
