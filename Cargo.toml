@@ -1,0 +1,30 @@
+[package]
+name = "task-queue"
+version = "0.1.0"
+edition = "2024"
+default-run = "task-queue"
+
+
+[dependencies]
+tokio = { version = "1.47", features = ["full"] }
+axum = { version = "0.8", features = ["ws"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace", "fs"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.18", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1.0"
+thiserror = "2.0"
+prometheus = "0.14"
+serde_yaml = "0.9"
+reqwest = { version = "0.12", features = ["json"] }
+sled = "0.34"
+clap = { version = "4.0", features = ["derive"] }
+tokio-util = "0.7"
+tokio-stream = "0.1"
+scopeguard = "1.2"
+futures-util = "0.3"
+rmcp = { version = "0.7.0", features = ["server", "macros", "transport-sse-server"] }

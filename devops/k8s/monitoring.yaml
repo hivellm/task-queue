@@ -1,0 +1,90 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: task-queue-monitor
+  namespace: task-queue
+  labels:
+    app: task-queue
+spec:
+  selector:
+    matchLabels:
+      app: task-queue
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: task-queue-metrics
+  namespace: task-queue
+  labels:
+    app: task-queue
+spec:
+  selector:
+    app: task-queue
+  ports:
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: task-queue-pdb
+  namespace: task-queue
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: task-queue
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: task-queue-backup
+  namespace: task-queue
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: backup
+            image: task-queue:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting backup..."
+              cp /app/data/task-queue.db /app/backups/task-queue-$(date +%Y%m%d).db
+              echo "Backup completed"
+            volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: backups
+              mountPath: /app/backups
+          volumes:
+          - name: data
+            persistentVolumeClaim:
+              claimName: task-queue-data
+          - name: backups
+            persistentVolumeClaim:
+              claimName: task-queue-backups
+          restartPolicy: OnFailure
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: task-queue-backups
+  namespace: task-queue
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: standard

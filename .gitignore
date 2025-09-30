@@ -1,0 +1,178 @@
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# Build artifacts
+*.exe
+*.pdb
+*.dll
+*.so
+*.dylib
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+output.log
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+task-queue-data/
+task-queue-data-backup/
+
+# Configuration files with secrets
+config.yml
+.env
+.env.local
+.env.production
+
+# Data directory
+data/
+backups/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Coverage reports
+tarpaulin-report.html
+lcov.info
+coverage/
+
+# Profiling
+perf.data*
+flamegraph.svg
+
+# Documentation build
+/book/
+
+# Local development
+.local/
+
+# Vectorizer
+.vectorizer
+
+# Docker
+.dockerignore
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Configuration files with secrets
+config.yml
+.env
+.env.local
+.env.production
+
+# Data directory
+data/
+backups/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Coverage reports
+tarpaulin-report.html
+lcov.info
+
+# Profiling
+perf.data*
+flamegraph.svg
+
+# Documentation build
+/book/
+
+# Local development
+.local/
+
+# Vectorizer
+.vectorizer
+
+# Rust build
+target/ 

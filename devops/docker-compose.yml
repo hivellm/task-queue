@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  task-queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: task-queue-server
+    ports:
+      - "16080:16080"  # HTTP API + MCP Server
+    volumes:
+      - ./data:/app/data
+      - ./config.yml:/app/config.yml:ro
+      - ./logs:/app/logs
+    environment:
+      - RUST_LOG=info
+      - TASK_QUEUE_DB_PATH=/app/data/task-queue.db
+      - TASK_QUEUE_PORT=16080
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:16080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - task-queue-network
+
+  # Optional: Redis for caching (if needed in future)
+  redis:
+    image: redis:7-alpine
+    container_name: task-queue-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - task-queue-network
+    profiles:
+      - cache
+
+  # Optional: PostgreSQL for advanced storage (if needed in future)
+  postgres:
+    image: postgres:15-alpine
+    container_name: task-queue-postgres
+    environment:
+      POSTGRES_DB: taskqueue
+      POSTGRES_USER: taskqueue
+      POSTGRES_PASSWORD: taskqueue_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - task-queue-network
+    profiles:
+      - database
+
+  # Development service with hot reload
+  task-queue-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: task-queue-dev
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    volumes:
+      - .:/app
+      - /app/target
+    environment:
+      - RUST_LOG=debug
+      - RUST_BACKTRACE=1
+    command: ["cargo", "run", "--", "--dev"]
+    networks:
+      - task-queue-network
+    profiles:
+      - dev
+
+volumes:
+  redis-data:
+  postgres-data:
+
+networks:
+  task-queue-network:
+    driver: bridge

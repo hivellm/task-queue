@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  task-queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: task-queue-prod
+    ports:
+      - "16080:16080"
+    volumes:
+      - task-queue-data:/app/data
+      - ./config.yml:/app/config.yml:ro
+      - task-queue-logs:/app/logs
+    environment:
+      - RUST_LOG=info
+      - TASK_QUEUE_DB_PATH=/app/data/task-queue.db
+      - TASK_QUEUE_PORT=16080
+      - TASK_QUEUE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:16080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - task-queue-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: task-queue-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - task-queue
+    restart: unless-stopped
+    networks:
+      - task-queue-network
+
+  # Prometheus for monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: task-queue-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - task-queue-network
+    profiles:
+      - monitoring
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: task-queue-grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    restart: unless-stopped
+    networks:
+      - task-queue-network
+    profiles:
+      - monitoring
+
+volumes:
+  task-queue-data:
+    driver: local
+  task-queue-logs:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  task-queue-network:
+    driver: bridge

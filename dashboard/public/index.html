@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Queue Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/dashboard/styles.css" rel="stylesheet">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="/dashboard/api-client.js"></script>
+</head>
+<body>
+    <div id="app" class="dashboard">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h1><i class="fas fa-tasks"></i> Task Queue</h1>
+            </div>
+            <ul class="nav-menu">
+                <li :class="['nav-item', { active: currentPage === 'overview' }]" @click="setPage('overview')">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Overview</span>
+                </li>
+                <li :class="['nav-item', { active: currentPage === 'projects' }]" @click="setPage('projects')">
+                    <i class="fas fa-folder"></i>
+                    <span>Projects</span>
+                </li>
+                <li :class="['nav-item', { active: currentPage === 'tasks' }]" @click="setPage('tasks')">
+                    <i class="fas fa-list-alt"></i>
+                    <span>Tasks</span>
+                </li>
+                <li :class="['nav-item', { active: currentPage === 'workflows' }]" @click="setPage('workflows')">
+                    <i class="fas fa-project-diagram"></i>
+                    <span>Workflows</span>
+                </li>
+                <li :class="['nav-item', { active: currentPage === 'dependencies' }]" @click="setPage('dependencies')">
+                    <i class="fas fa-sitemap"></i>
+                    <span>Dependencies</span>
+                </li>
+                <li :class="['nav-item', { active: currentPage === 'metrics' }]" @click="setPage('metrics')">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Metrics</span>
+                </li>
+                <li :class="['nav-item', { active: currentPage === 'console' }]" @click="setPage('console')">
+                    <i class="fas fa-terminal"></i>
+                    <span>Console</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="breadcrumb">
+                    <span>{{ pageTitle }}</span>
+                </div>
+                <div class="top-bar-actions">
+                    <button class="btn btn-icon" @click="refreshData" :disabled="loading">
+                        <i :class="['fas', loading ? 'fa-spinner fa-spin' : 'fa-sync-alt']"></i>
+                    </button>
+                    <div class="connection-status">
+                        <span :class="['status-dot', { online: connected }]"></span>
+                        <span>{{ connected ? 'Connected' : 'Disconnected' }}</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <!-- Overview Page -->
+                <div v-if="currentPage === 'overview'">
+                    <!-- Stats Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-list-alt"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value">{{ stats.total_tasks }}</div>
+                                <div class="stat-label">Total Tasks</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-play"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value">{{ stats.active_tasks }}</div>
+                                <div class="stat-label">Active Tasks</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value">{{ stats.pending_tasks }}</div>
+                                <div class="stat-label">Pending Tasks</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value">{{ stats.completed_tasks }}</div>
+                                <div class="stat-label">Completed Tasks</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value">{{ stats.failed_tasks }}</div>
+                                <div class="stat-label">Failed Tasks</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-project-diagram"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-value">{{ stats.total_workflows }}</div>
+                                <div class="stat-label">Workflows</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Tasks -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-history"></i> Recent Tasks</h3>
+                            <button class="btn btn-primary" @click="setPage('tasks')">
+                                <i class="fas fa-eye"></i> View All
+                            </button>
+                        </div>
+                        <div class="tasks-list">
+                            <div v-for="task in recentTasks" :key="task.id" class="task-item">
+                                <div class="task-header">
+                                    <div class="task-name">
+                                        <i class="fas fa-tasks"></i>
+                                        <span>{{ task.name }}</span>
+                                    </div>
+                                    <span :class="['task-status', getStatusClass(task.status)]">
+                                        {{ formatStatus(task.status) }}
+                                    </span>
+                                </div>
+                                <div class="task-details">
+                                    <div class="task-info">
+                                        <span class="task-project">{{ task.project_id ? (projects.find(p => p.id === task.project_id)?.name || 'Unknown Project') : 'No Project' }}</span>
+                                        <span class="task-priority" :class="getPriorityClass(task.priority)">
+                                            {{ formatPriority(task.priority) }}
+                                        </span>
+                                    </div>
+                                    <div class="task-time">
+                                        {{ formatTime(task.created_at) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Development Phase Overview -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-code-branch"></i> Development Phases</h3>
+                        </div>
+                        <div class="phases-grid">
+                            <div class="phase-card" v-for="phase in developmentPhases" :key="phase.status">
+                                <div class="phase-icon">
+                                    <i :class="phase.icon"></i>
+                                </div>
+                                <div class="phase-content">
+                                    <div class="phase-count">{{ phase.count }}</div>
+                                    <div class="phase-label">{{ phase.label }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projects Page -->
+                <div v-else-if="currentPage === 'projects'">
+                    <div class="projects-page">
+                        <div class="page-header">
+                            <div class="header-content">
+                                <div class="header-title">
+                                    <div class="title-icon">
+                                        <i class="fas fa-folder"></i>
+                                    </div>
+                                    <div class="title-text">
+                                        <h1>Projects</h1>
+                                        <p>Manage and organize your development projects</p>
+                                    </div>
+                                </div>
+                                <div class="header-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-number">{{ projects.length }}</span>
+                                        <span class="stat-label">Total Projects</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-number">{{ projects.filter(p => p.status === 'Active').length }}</span>
+                                        <span class="stat-label">Active</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="header-actions">
+                                <button class="btn btn-primary" @click="showCreateProjectModal">
+                                    <i class="fas fa-plus"></i> Create Project
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Projects Grid -->
+                        <div class="projects-grid">
+                            <div v-for="projectItem in projects" :key="projectItem?.id || 'unknown'" class="project-card">
+                                <div class="project-header">
+                                    <div class="project-name">
+                                        <i class="fas fa-folder"></i>
+                                        <span>{{ projectItem?.name || 'Unnamed Project' }}</span>
+                                    </div>
+                                    <span :class="['project-status', getProjectStatusClass(projectItem?.status)]">
+                                        {{ formatProjectStatus(projectItem?.status) }}
+                                    </span>
+                                </div>
+                                <div class="project-description" v-if="projectItem?.description">
+                                    {{ projectItem.description }}
+                                </div>
+                                <div class="project-meta">
+                                    <div class="project-info">
+                                        <span><i class="fas fa-calendar"></i> {{ formatDate(projectItem?.created_at) }}</span>
+                                        <span v-if="projectItem?.tags && projectItem.tags.length > 0">
+                                            <i class="fas fa-tags"></i> {{ projectItem.tags.join(', ') }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="project-actions">
+                                    <button class="btn btn-sm btn-outline" @click="viewProject(projectItem?.id)" :disabled="!projectItem?.id">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                    <button class="btn btn-sm btn-outline" @click="editProject(projectItem?.id)" :disabled="!projectItem?.id">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div v-if="projects.length === 0" class="empty-state projects-empty">
+                            <div class="empty-illustration">
+                                <div class="empty-icon">
+                                    <i class="fas fa-folder-open"></i>
+                                </div>
+                                <div class="empty-dots">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                            <div class="empty-content">
+                                <h3>No Projects Yet</h3>
+                                <p>Start organizing your development work by creating your first project. Projects help you group related tasks and track progress more effectively.</p>
+                                <div class="empty-actions">
+                                    <button class="btn btn-primary btn-lg" @click="showCreateProjectModal">
+                                        <i class="fas fa-plus"></i> Create Your First Project
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tasks Page -->
+                <div v-else-if="currentPage === 'tasks'">
+                    <div class="tasks-page">
+                        <div class="page-header">
+                            <div class="header-content">
+                                <div class="header-title">
+                                    <div class="title-icon">
+                                        <i class="fas fa-tasks"></i>
+                                    </div>
+                                    <div class="title-text">
+                                        <h1>Tasks</h1>
+                                        <p>Manage and monitor your development tasks</p>
+                                    </div>
+                                </div>
+                                <div class="header-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-number">{{ tasks.length }}</span>
+                                        <span class="stat-label">Total Tasks</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-number">{{ tasks.filter(t => t.status === 'Running').length }}</span>
+                                        <span class="stat-label">Active</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-number">{{ tasks.filter(t => t.status === 'Completed').length }}</span>
+                                        <span class="stat-label">Completed</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="header-actions">
+                                <button class="btn btn-primary" @click="showCreateTaskModal">
+                                    <i class="fas fa-plus"></i> Create Task
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Filters -->
+                        <div class="filters-section">
+                            <div class="filter-group">
+                                <label>Status:</label>
+                                <select v-model="taskFilters.status" @change="loadTasks">
+                                    <option value="">All Status</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Running">Running</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Failed">Failed</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                    <option value="AnalysisAndDocumentation">Analysis & Documentation</option>
+                                    <option value="InDiscussion">In Discussion</option>
+                                    <option value="InImplementation">In Implementation</option>
+                                    <option value="InReview">In Review</option>
+                                    <option value="InTesting">In Testing</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Project:</label>
+                                <select v-model="taskFilters.project" @change="loadTasks">
+                                    <option value="">All Projects</option>
+                                    <option v-for="projectName in projectNames" :key="projectName" :value="projectName">{{ projectName }}</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Priority:</label>
+                                <select v-model="taskFilters.priority" @change="loadTasks">
+                                    <option value="">All Priorities</option>
+                                    <option value="Low">Low</option>
+                                    <option value="Normal">Normal</option>
+                                    <option value="High">High</option>
+                                    <option value="Critical">Critical</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Tasks List -->
+                        <div class="tasks-grid">
+                            <div v-for="task in tasks" :key="task.id" class="task-card">
+                                <div class="task-header">
+                                    <div class="task-name">
+                                        <i class="fas fa-tasks"></i>
+                                        <span>{{ task.name }}</span>
+                                    </div>
+                                    <div class="task-menu">
+                                        <button class="btn btn-icon" @click="showTaskMenu(task.id, $event)">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="task-content">
+                                    <div class="task-status">
+                                        <span :class="['status-badge', getStatusClass(task.status)]">
+                                            {{ formatStatus(task.status) }}
+                                        </span>
+                                    </div>
+                                    <div class="task-details">
+                                        <div class="detail-row">
+                                            <span class="label">Project:</span>
+                                            <span class="value">{{ task.project_id ? (projects.find(p => p.id === task.project_id)?.name || 'Unknown Project') : 'No Project' }}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="label">Priority:</span>
+                                            <span class="value" :class="getPriorityClass(task.priority)">
+                                                {{ formatPriority(task.priority) }}
+                                            </span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="label">Type:</span>
+                                            <span class="value">{{ task.task_type }}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="label">Created:</span>
+                                            <span class="value">{{ formatTime(task.created_at) }}</span>
+                                        </div>
+                                        <div v-if="task.dependencies && task.dependencies.length > 0" class="detail-row">
+                                            <span class="label">Dependencies:</span>
+                                            <span class="value">{{ task.dependencies.length }}</span>
+                                        </div>
+                                    </div>
+                                    <div v-if="task.command" class="task-command">
+                                        <code>{{ task.command }}</code>
+                                    </div>
+                                </div>
+                                <div class="task-actions">
+                                    <button class="btn btn-secondary btn-sm" @click="viewTaskDetails(task.id)">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                    <button v-if="task.is_in_development" class="btn btn-primary btn-sm" @click="advanceTaskPhase(task.id)">
+                                        <i class="fas fa-forward"></i> Advance
+                                    </button>
+                                    <button v-if="task.status === 'Failed'" class="btn btn-warning btn-sm" @click="retryTask(task.id)">
+                                        <i class="fas fa-redo"></i> Retry
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflows Page -->
+                <div v-else-if="currentPage === 'workflows'">
+                    <div class="workflows-page">
+                        <div class="page-header">
+                            <div class="header-content">
+                                <h1><i class="fas fa-project-diagram"></i> Workflows</h1>
+                                <p>Manage your workflow executions</p>
+                            </div>
+                            <div class="header-actions">
+                                <button class="btn btn-primary" @click="showCreateWorkflowModal">
+                                    <i class="fas fa-plus"></i> Create Workflow
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="workflows-grid">
+                            <div v-for="workflow in workflows" :key="workflow.id" class="workflow-card">
+                                <div class="workflow-header">
+                                    <div class="workflow-name">
+                                        <i class="fas fa-project-diagram"></i>
+                                        <span>{{ workflow.name }}</span>
+                                    </div>
+                                    <span :class="['workflow-status', getWorkflowStatusClass(workflow.status)]">
+                                        {{ formatWorkflowStatus(workflow.status) }}
+                                    </span>
+                                </div>
+                                <div class="workflow-content">
+                                    <div class="workflow-details">
+                                        <div class="detail-row">
+                                            <span class="label">Tasks:</span>
+                                            <span class="value">{{ workflow.tasks.length }}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="label">Created:</span>
+                                            <span class="value">{{ formatTime(workflow.created_at) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="workflow-actions">
+                                    <button class="btn btn-secondary btn-sm" @click="viewWorkflowDetails(workflow)">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dependencies Page -->
+                <div v-else-if="currentPage === 'dependencies'">
+                    <div class="dependencies-page">
+                        <div class="page-header">
+                            <h1><i class="fas fa-sitemap"></i> Task Dependencies</h1>
+                            <p>Visualize and manage task dependencies</p>
+                        </div>
+
+                        <div class="dependencies-content">
+                            <div class="dependency-filters">
+                                <div class="filter-group">
+                                    <label>Correlation ID:</label>
+                                    <input v-model="dependencyFilters.correlationId" type="text" placeholder="Filter by correlation ID">
+                                </div>
+                                <div class="filter-group">
+                                    <label>Task:</label>
+                                    <select v-model="dependencyFilters.taskId" @change="loadDependencies">
+                                        <option value="">Select a task</option>
+                                        <option v-for="task in tasks" :key="task.id" :value="task.id">{{ task.name }}</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div v-if="selectedTaskDependencies.length > 0" class="dependencies-list">
+                                <h3>Dependencies for: {{ getTaskName(dependencyFilters.taskId) }}</h3>
+                                <div v-for="dep in selectedTaskDependencies" :key="dep.task_id" class="dependency-item">
+                                    <div class="dependency-info">
+                                        <div class="dependency-task">
+                                            <i class="fas fa-tasks"></i>
+                                            <span>{{ getTaskName(dep.task_id) }}</span>
+                                        </div>
+                                        <div class="dependency-details">
+                                            <span class="condition">{{ formatCondition(dep.condition) }}</span>
+                                            <span :class="['required', dep.required ? 'yes' : 'no']">
+                                                {{ dep.required ? 'Required' : 'Optional' }}
+                                            </span>
+                                            <span v-if="dep.correlation_id" class="correlation">
+                                                Correlation: {{ dep.correlation_id }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metrics Page -->
+                <div v-else-if="currentPage === 'metrics'">
+                    <div class="metrics-page">
+                        <div class="page-header">
+                            <h1><i class="fas fa-chart-line"></i> System Metrics</h1>
+                            <p>Monitor system performance and task statistics</p>
+                        </div>
+
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <h3>Task Statistics</h3>
+                                <div class="metric-content">
+                                    <div class="metric-item">
+                                        <span class="metric-label">Tasks Submitted:</span>
+                                        <span class="metric-value">{{ metrics.tasks_submitted || 0 }}</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label">Tasks Completed:</span>
+                                        <span class="metric-value">{{ metrics.tasks_completed || 0 }}</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label">Tasks Failed:</span>
+                                        <span class="metric-value">{{ metrics.tasks_failed || 0 }}</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label">Tasks Cancelled:</span>
+                                        <span class="metric-value">{{ metrics.tasks_cancelled || 0 }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="metric-card">
+                                <h3>Workflow Statistics</h3>
+                                <div class="metric-content">
+                                    <div class="metric-item">
+                                        <span class="metric-label">Workflows Submitted:</span>
+                                        <span class="metric-value">{{ metrics.workflows_submitted || 0 }}</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label">Workflows Completed:</span>
+                                        <span class="metric-value">{{ metrics.workflows_completed || 0 }}</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label">Workflows Failed:</span>
+                                        <span class="metric-value">{{ metrics.workflows_failed || 0 }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="metric-card">
+                                <h3>System Performance</h3>
+                                <div class="metric-content">
+                                    <div class="metric-item">
+                                        <span class="metric-label">CPU Usage:</span>
+                                        <span class="metric-value">{{ stats.cpu_usage_percent }}%</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label">Memory Usage:</span>
+                                        <span class="metric-value">{{ stats.memory_usage_mb }} MB</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label">Uptime:</span>
+                                        <span class="metric-value">{{ stats.uptime_seconds }}s</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Console Page -->
+                <div v-else-if="currentPage === 'console'">
+                    <div class="console-page">
+                        <div class="page-header">
+                            <h1><i class="fas fa-terminal"></i> API Console</h1>
+                            <p>Test API endpoints directly from the dashboard</p>
+                        </div>
+
+                        <div class="console-container">
+                            <div class="console-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="console-method">Method</label>
+                                        <select id="console-method" class="form-control">
+                                            <option value="GET">GET</option>
+                                            <option value="POST">POST</option>
+                                            <option value="PUT">PUT</option>
+                                            <option value="DELETE">DELETE</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group flex-1">
+                                        <label for="console-endpoint">Endpoint</label>
+                                        <input type="text" id="console-endpoint" class="form-control" placeholder="/tasks" value="/tasks">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="console-body">Request Body (JSON)</label>
+                                    <textarea id="console-body" class="form-control code-editor" rows="8" placeholder='{\n  "name": "My Task",\n  "command": "echo hello"\n}'></textarea>
+                                </div>
+
+                                <div class="console-actions">
+                                    <button class="btn btn-primary" @click="executeConsoleRequest">
+                                        <i class="fas fa-play"></i> Execute
+                                    </button>
+                                    <button class="btn btn-secondary" @click="clearConsole">
+                                        <i class="fas fa-trash"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="console-output">
+                                <div class="output-header">
+                                    <h3>Response</h3>
+                                    <span id="response-status" class="response-status"></span>
+                                </div>
+                                <pre id="console-response" class="response-content">Execute a request to see the response...</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay" style="display: none;">
+        <div id="modal-content" class="modal-content">
+            <!-- Modal content will be inserted here -->
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Loading...</span>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/dashboard/app.js"></script>
+</body>
+</html>

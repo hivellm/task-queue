@@ -1,0 +1,189 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: task-queue
+  labels:
+    name: task-queue
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: task-queue-config
+  namespace: task-queue
+data:
+  config.yml: |
+    server:
+      host: "0.0.0.0"
+      port: 3000
+      mcp_port: 3001
+    
+    storage:
+      db_path: "/app/data/task-queue.db"
+    
+    logging:
+      level: "info"
+      format: "json"
+    
+    metrics:
+      enabled: true
+      port: 9090
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: task-queue-secrets
+  namespace: task-queue
+type: Opaque
+stringData:
+  # These will be base64 encoded automatically
+  api-key: "taskqueue-api-key-change-me"
+  jwt-secret: "taskqueue-jwt-secret-change-me"
+  database-url: "sqlite:///app/data/task-queue.db"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-queue
+  namespace: task-queue
+  labels:
+    app: task-queue
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: task-queue
+  template:
+    metadata:
+      labels:
+        app: task-queue
+    spec:
+      serviceAccountName: task-queue-sa
+      containers:
+      - name: task-queue
+        image: task-queue:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 16080
+          name: http
+        env:
+        - name: RUST_LOG
+          value: "info"
+        - name: TASK_QUEUE_DB_PATH
+          value: "/app/data/task-queue.db"
+        - name: TASK_QUEUE_PORT
+          value: "16080"
+        volumeMounts:
+        - name: config
+          mountPath: /app/config.yml
+          subPath: config.yml
+        - name: data
+          mountPath: /app/data
+        - name: secrets
+          mountPath: /app/secrets
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 16080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 16080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: config
+        configMap:
+          name: task-queue-config
+      - name: data
+        persistentVolumeClaim:
+          claimName: task-queue-data
+      - name: secrets
+        secret:
+          secretName: task-queue-secrets
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: task-queue-data
+  namespace: task-queue
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: task-queue-service
+  namespace: task-queue
+  labels:
+    app: task-queue
+spec:
+  selector:
+    app: task-queue
+  ports:
+  - name: http
+    port: 80
+    targetPort: 16080
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: task-queue-ingress
+  namespace: task-queue
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - host: task-queue.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: task-queue-service
+            port:
+              number: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: task-queue-hpa
+  namespace: task-queue
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: task-queue
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
