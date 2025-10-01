@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Test</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.js"></script>
+    <script src="/dashboard/public/api-client.js"></script>
+    <script src="/dashboard/public/auth.js"></script>
+</head>
+<body>
+    <div id="test-app">
+        <h1>Dashboard Test</h1>
+        <div id="status">
+            <p>Vue: <span id="vue-status">Loading...</span></p>
+            <p>VueRouter: <span id="vuerouter-status">Loading...</span></p>
+            <p>AuthManager: <span id="auth-status">Loading...</span></p>
+            <p>API Client: <span id="api-status">Loading...</span></p>
+        </div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function updateStatus() {
+            document.getElementById('vue-status').textContent = typeof Vue !== 'undefined' ? '✓ Loaded' : '✗ Not loaded';
+            document.getElementById('vuerouter-status').textContent = typeof VueRouter !== 'undefined' ? '✓ Loaded' : '✗ Not loaded';
+            document.getElementById('auth-status').textContent = typeof window.authManager !== 'undefined' ? '✓ Loaded' : '✗ Not loaded';
+            document.getElementById('api-status').textContent = typeof window.apiClient !== 'undefined' ? '✓ Loaded' : '✗ Not loaded';
+
+            const allLoaded = typeof Vue !== 'undefined' &&
+                             typeof VueRouter !== 'undefined' &&
+                             typeof window.authManager !== 'undefined' &&
+                             typeof window.apiClient !== 'undefined';
+
+            if (allLoaded) {
+                document.getElementById('result').innerHTML = '<p style="color: green;">✓ All scripts loaded successfully!</p>';
+                // Try to initialize a simple Vue app
+                try {
+                    const { createApp } = Vue;
+                    const app = createApp({
+                        data() {
+                            return {
+                                message: 'Vue.js is working!'
+                            }
+                        },
+                        template: '<div>{{ message }}</div>'
+                    });
+                    app.mount('#result');
+                } catch (error) {
+                    document.getElementById('result').innerHTML = '<p style="color: red;">✗ Vue initialization failed: ' + error.message + '</p>';
+                }
+            } else {
+                setTimeout(updateStatus, 100);
+            }
+        }
+
+        // Start checking status
+        updateStatus();
+    </script>
+</body>
+</html>
