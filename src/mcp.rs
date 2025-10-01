@@ -638,15 +638,7 @@ impl ServerHandler for TaskQueueMcpServer {
                         },
                         "required": ["name", "command", "project_id"]
                     }).as_object().unwrap().clone().into(),
-                    output_schema: Some(json!({
-                        "type": "object",
-                        "properties": {
-                            "task_id": {"type": "string"},
-                            "status": {"type": "string"},
-                            "message": {"type": "string"}
-                        },
-                        "required": ["task_id", "status", "message"]
-                    }).as_object().unwrap().clone().into()),
+                    output_schema: None,
                     icons: None,
                     annotations: Some(ToolAnnotations::new()
                         .read_only(false)
@@ -665,14 +657,7 @@ impl ServerHandler for TaskQueueMcpServer {
                         },
                         "required": ["task_id"]
                     }).as_object().unwrap().clone().into(),
-                    output_schema: Some(json!({
-                        "type": "object",
-                        "properties": {
-                            "task": {"type": "object"},
-                            "status": {"type": "string"}
-                        },
-                        "required": ["task", "status"]
-                    }).as_object().unwrap().clone().into()),
+                    output_schema: None,
                     icons: None,
                     annotations: Some(ToolAnnotations::new()
                         .read_only(true)
@@ -689,418 +674,256 @@ impl ServerHandler for TaskQueueMcpServer {
                             "limit": {"type": "number", "description": "Maximum number of tasks to return", "default": 50}
                         }
                     }).as_object().unwrap().clone().into(),
-                    output_schema: Some(json!({
-                        "type": "object",
-                        "properties": {
-                            "tasks": {"type": "array"},
-                            "status": {"type": "string"}
-                        },
-                        "required": ["tasks", "status"]
-                    }).as_object().unwrap().clone().into()),
+                    output_schema: None,
                     icons: None,
                     annotations: Some(ToolAnnotations::new()
                         .read_only(true)
                         .idempotent(true)
                         .open_world(false)),
                 },
-                            Tool {
-                                name: Cow::Borrowed("cancel_task"),
-                                title: Some("Cancel Task".to_string()),
-                                description: Some(Cow::Borrowed("Cancel a task by its ID, preventing further execution. This operation marks the task as cancelled and stops any ongoing or scheduled execution. Useful when a task is no longer needed, was submitted in error, or requirements have changed. Returns success status indicating whether the task was successfully cancelled. Cannot cancel already completed tasks.")),
-                                input_schema: json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "task_id": {"type": "string", "description": "Task ID to cancel"}
-                                    },
-                                    "required": ["task_id"]
-                                }).as_object().unwrap().clone().into(),
-                                output_schema: Some(json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "task_id": {"type": "string"},
-                                        "cancelled": {"type": "boolean"},
-                                        "status": {"type": "string"}
-                                    },
-                                    "required": ["task_id", "cancelled", "status"]
-                                }).as_object().unwrap().clone().into()),
-                                icons: None,
-                                annotations: Some(ToolAnnotations::new()
-                                    .read_only(false)
-                                    .destructive(false)
-                                    .idempotent(true)
-                                    .open_world(false)),
+                Tool {
+                        name: Cow::Borrowed("cancel_task"),
+                        title: Some("Cancel Task".to_string()),
+                        description: Some(Cow::Borrowed("Cancel a task by its ID, preventing further execution. This operation marks the task as cancelled and stops any ongoing or scheduled execution. Useful when a task is no longer needed, was submitted in error, or requirements have changed. Returns success status indicating whether the task was successfully cancelled. Cannot cancel already completed tasks.")),
+                        input_schema: json!({
+                            "type": "object",
+                            "properties": {
+                                "task_id": {"type": "string", "description": "Task ID to cancel"}
                             },
-                            Tool {
-                                name: Cow::Borrowed("delete_task"),
-                                title: Some("Delete Task".to_string()),
-                                description: Some(Cow::Borrowed("Permanently delete a task from the queue by its ID. This operation is irreversible and removes all task data, including history, workflow status, and review reports. Use with caution as this cannot be undone. Only use this for cleanup of obsolete tasks or tasks that were created in error. Returns success status confirming deletion. For tasks that should be preserved for audit purposes, use cancel_task instead.")),
-                                input_schema: json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "task_id": {"type": "string", "description": "Task ID to delete"}
-                                    },
-                                    "required": ["task_id"]
-                                }).as_object().unwrap().clone().into(),
-                                output_schema: Some(json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "deleted": {"type": "boolean"},
-                                        "status": {"type": "string"},
-                                        "message": {"type": "string"}
-                                    },
-                                    "required": ["deleted", "status", "message"]
-                                }).as_object().unwrap().clone().into()),
-                                icons: None,
-                                annotations: Some(ToolAnnotations::new()
-                                    .read_only(false)
-                                    .destructive(true)
-                                    .idempotent(true)
-                                    .open_world(false)),
-                            },
-                            Tool {
-                                name: Cow::Borrowed("update_task"),
-                                title: Some("Update Task".to_string()),
-                                description: Some(Cow::Borrowed("Update an existing task's properties including name, command, description, priority, status, or project association. Allows partial updates - only specified fields will be changed. Can be used to change task priority, update descriptions, modify commands, or reassign to different projects. When updating status, ensure it follows the proper workflow sequence. Returns updated task information including all current properties and timestamps.")),
-                                input_schema: json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "task_id": {"type": "string", "description": "Task ID to update"},
-                                        "name": {"type": "string", "description": "New task name"},
-                                        "command": {"type": "string", "description": "New command"},
-                                        "description": {"type": "string", "description": "New description"},
-                                        "priority": {"type": "string", "enum": ["Low", "Normal", "High", "Critical"], "description": "New priority"},
-                                        "status": {"type": "string", "enum": ["Planning", "Implementation", "TestCreation", "Testing", "AIReview", "Finalized", "Pending", "Running", "Completed", "Failed", "Cancelled"], "description": "New status"},
-                                        "project_id": {"type": "string", "description": "Project ID to associate with task (empty string to remove association)"}
-                                    },
-                                    "required": ["task_id"]
-                                }).as_object().unwrap().clone().into(),
-                                output_schema: Some(json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "task": {
-                                            "type": "object",
-                                            "properties": {
-                                                "id": {"type": "string"},
-                                                "name": {"type": "string"},
-                                                "command": {"type": "string"},
-                                                "description": {"type": "string"},
-                                                "status": {"type": "string"},
-                                                "current_phase": {"type": "string"},
-                                                "priority": {"type": "string"},
-                                                "updated_at": {"type": "string"}
-                                            }
-                                        },
-                                        "status": {"type": "string"}
-                                    },
-                                    "required": ["task", "status"]
-                                }).as_object().unwrap().clone().into()),
-                                icons: None,
-                                annotations: Some(ToolAnnotations::new()
-                                    .read_only(false)
-                                    .destructive(false)
-                                    .idempotent(false)
-                                    .open_world(false)),
-                            },
-                            Tool {
-                                name: Cow::Borrowed("upsert_task"),
-                                title: Some("Upsert Task".to_string()),
-                                description: Some(Cow::Borrowed("Create a new task or update an existing one by name (insert or update). If a task with the given name exists, it will be updated; otherwise, a new task is created. This is useful for maintaining tasks that should be unique by name. Supports setting technical specifications and acceptance criteria upfront. Returns the task information indicating whether it was created or updated. Ideal for idempotent task submission where you want to ensure a task exists with specific properties.")),
-                                input_schema: json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "name": {"type": "string", "description": "Task name (used for lookup)"},
-                                        "command": {"type": "string", "description": "Command to execute"},
-                                        "description": {"type": "string", "description": "Task description"},
-                                        "project_id": {"type": "string", "description": "Project ID to associate the task with"},
-                                        "priority": {"type": "string", "enum": ["Low", "Normal", "High", "Critical"], "description": "Task priority"},
-                                        "technical_specs": {"type": "string", "description": "Technical specifications"},
-                                        "acceptance_criteria": {"type": "array", "items": {"type": "string"}, "description": "Acceptance criteria"}
-                                    },
-                                    "required": ["name", "command", "description", "project_id"]
-                                }).as_object().unwrap().clone().into(),
-                                output_schema: Some(json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "task": {
-                                            "type": "object",
-                                            "properties": {
-                                                "id": {"type": "string"},
-                                                "name": {"type": "string"},
-                                                "command": {"type": "string"},
-                                                "description": {"type": "string"},
-                                                "status": {"type": "string"},
-                                                "current_phase": {"type": "string"},
-                                                "priority": {"type": "string"},
-                                                "created_at": {"type": "string"},
-                                                "updated_at": {"type": "string"}
-                                            }
-                                        },
-                                        "status": {"type": "string"}
-                                    },
-                                    "required": ["task", "status"]
-                                }).as_object().unwrap().clone().into()),
-                                icons: None,
-                                annotations: Some(ToolAnnotations::new()
-                                    .read_only(false)
-                                    .destructive(false)
-                                    .idempotent(true)
-                                    .open_world(false)),
-                            },
-                            Tool {
-                                name: Cow::Borrowed("create_project"),
-                                title: Some("Create Project".to_string()),
-                                description: Some(Cow::Borrowed("Create a new project to organize and group related tasks. Projects serve as containers for tasks that belong to the same initiative, feature, or module. Returns the project ID which can be used when creating tasks. Projects help with task organization, progress tracking, and reporting. Use this before creating tasks to establish proper project structure and organization.")),
-                                input_schema: json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "name": {"type": "string", "description": "Project name"},
-                                        "description": {"type": "string", "description": "Project description"}
-                                    },
-                                    "required": ["name"]
-                                }).as_object().unwrap().clone().into(),
-                                output_schema: Some(json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "project_id": {"type": "string"},
-                                        "status": {"type": "string"},
-                                        "message": {"type": "string"}
-                                    },
-                                    "required": ["project_id", "status", "message"]
-                                }).as_object().unwrap().clone().into()),
-                                icons: None,
-                                annotations: Some(ToolAnnotations::new()
-                                    .read_only(false)
-                                    .destructive(false)
-                                    .idempotent(false)
-                                    .open_world(false)),
-                            },
-                            Tool {
-                                name: Cow::Borrowed("get_project"),
-                                title: Some("Get Project".to_string()),
-                                description: Some(Cow::Borrowed("Get detailed information about a specific project by its ID. Returns comprehensive project details including name, description, status, creation and update timestamps, due dates, tags, and custom metadata. Use this to retrieve project information, check project status, or get project metadata before creating or querying tasks.")),
-                                input_schema: json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "project_id": {"type": "string", "description": "Project ID"}
-                                    },
-                                    "required": ["project_id"]
-                                }).as_object().unwrap().clone().into(),
-                                output_schema: Some(json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "project": {
-                                            "type": "object",
-                                            "properties": {
-                                                "id": {"type": "string"},
-                                                "name": {"type": "string"},
-                                                "description": {"type": "string"},
-                                                "status": {"type": "string"},
-                                                "created_at": {"type": "string"},
-                                                "updated_at": {"type": "string"},
-                                                "due_date": {"type": "string"},
-                                                "tags": {"type": "array", "items": {"type": "string"}},
-                                                "metadata": {"type": "object"}
-                                            }
-                                        },
-                                        "status": {"type": "string"}
-                                    },
-                                    "required": ["project", "status"]
-                                }).as_object().unwrap().clone().into()),
-                                icons: None,
-                                annotations: Some(ToolAnnotations::new()
-                                    .read_only(true)
-                                    .idempotent(true)
-                                    .open_world(false)),
-                            },
-                            Tool {
-                                name: Cow::Borrowed("list_projects"),
-                                title: Some("List Projects".to_string()),
-                                description: Some(Cow::Borrowed("List all projects in the system. Returns a summary of all projects including their ID, name, status, and creation timestamp. Use this to discover available projects, find project IDs for task creation, or get an overview of all active projects in the system. Essential for project discovery and selection.")),
-                                input_schema: json!({
-                                    "type": "object",
-                                    "properties": {}
-                                }).as_object().unwrap().clone().into(),
-                                output_schema: Some(json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "projects": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "id": {"type": "string"},
-                                                    "name": {"type": "string"},
-                                                    "status": {"type": "string"},
-                                                    "created_at": {"type": "string"}
-                                                }
-                                            }
-                                        }
-                                    },
-                                    "required": ["projects"]
-                                }).as_object().unwrap().clone().into()),
-                                icons: None,
-                                annotations: Some(ToolAnnotations::new()
-                                    .read_only(true)
-                                    .idempotent(true)
-                                    .open_world(false)),
-                            },
-                            Tool {
-                                name: Cow::Borrowed("get_project_tasks"),
-                                title: Some("Get Project Tasks".to_string()),
-                                description: Some(Cow::Borrowed("Get all tasks associated with a specific project. Returns a list of tasks belonging to the specified project, including task ID, name, status, current workflow phase, and priority. Useful for viewing all tasks within a project, tracking project progress, or identifying tasks that need attention. Provides quick overview of project workload and status distribution.")),
-                                input_schema: json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "project_id": {"type": "string", "description": "Project ID"}
-                                    },
-                                    "required": ["project_id"]
-                                }).as_object().unwrap().clone().into(),
-                                output_schema: Some(json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "tasks": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "id": {"type": "string"},
-                                                    "name": {"type": "string"},
-                                                    "status": {"type": "string"},
-                                                    "current_phase": {"type": "string"},
-                                                    "priority": {"type": "string"}
-                                                }
-                                            }
-                                        },
-                                        "status": {"type": "string"}
-                                    },
-                                    "required": ["tasks", "status"]
-                                }).as_object().unwrap().clone().into()),
-                                icons: None,
-                                annotations: Some(ToolAnnotations::new()
-                                    .read_only(true)
-                                    .idempotent(true)
-                                    .open_world(false)),
-                            },
-                            Tool {
-                                name: Cow::Borrowed("advance_workflow_phase"),
-                                title: Some("Advance Workflow Phase".to_string()),
-                                description: Some(Cow::Borrowed("Advance a task to the next development workflow phase. The workflow follows this sequence: NotStarted → Planning → Implementation → TestCreation → Testing → AIReview → Completed. Each phase transition is validated to ensure requirements are met. Returns the new workflow status and detailed instructions for the next phase. CRITICAL: Use this tool only when current phase requirements are fully satisfied (e.g., documentation complete for Planning, all tests passing for Testing).")),
-                                input_schema: json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "task_id": {"type": "string", "description": "Task ID to advance"}
-                                    },
-                                    "required": ["task_id"]
-                                }).as_object().unwrap().clone().into(),
-                                output_schema: Some(json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "new_status": {"type": "string"},
-                                        "message": {"type": "string"},
-                                        "workflow_instructions": {"type": "string"}
-                                    },
-                                    "required": ["new_status", "message"]
-                                }).as_object().unwrap().clone().into()),
-                                icons: None,
-                                annotations: Some(ToolAnnotations::new()
-                                    .read_only(false)
-                                    .destructive(false)
-                                    .idempotent(false)
-                                    .open_world(false)),
-                            },
-                            Tool {
-                                name: Cow::Borrowed("set_technical_documentation"),
-                                title: Some("Set Technical Documentation".to_string()),
-                                description: Some(Cow::Borrowed("Set the technical documentation path for a task in the Planning phase. This documents where the technical specifications, architecture decisions, and implementation details are stored. Required before advancing from Planning to Implementation phase. The documentation should include all implementation details, API contracts, data structures, and architectural decisions. Use this when documentation is complete and ready for implementation.")),
-                                input_schema: json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "task_id": {"type": "string", "description": "Task ID"},
-                                        "doc_path": {"type": "string", "description": "Path to technical documentation"}
-                                    },
-                                    "required": ["task_id", "doc_path"]
-                                }).as_object().unwrap().clone().into(),
-                                output_schema: Some(json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "success": {"type": "boolean"},
-                                        "doc_path": {"type": "string"},
-                                        "message": {"type": "string"}
-                                    },
-                                    "required": ["success", "doc_path", "message"]
-                                }).as_object().unwrap().clone().into()),
-                                icons: None,
-                                annotations: Some(ToolAnnotations::new()
-                                    .read_only(false)
-                                    .destructive(false)
-                                    .idempotent(true)
-                                    .open_world(false)),
-                            },
-                            Tool {
-                                name: Cow::Borrowed("set_test_coverage"),
-                                title: Some("Set Test Coverage".to_string()),
-                                description: Some(Cow::Borrowed("Set the test coverage percentage for a task in the Testing phase. Coverage value should be between 0.0 and 1.0 (0% to 100%). This documents the actual test coverage achieved after running tests. Minimum 85% coverage is typically required before advancing to AIReview phase. Use this after executing tests and calculating coverage to record the quality metrics. Essential for tracking testing completeness and quality standards.")),
-                                input_schema: json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "task_id": {"type": "string", "description": "Task ID"},
-                                        "coverage": {"type": "number", "description": "Test coverage percentage (0.0-1.0)", "minimum": 0.0, "maximum": 1.0}
-                                    },
-                                    "required": ["task_id", "coverage"]
-                                }).as_object().unwrap().clone().into(),
-                                output_schema: Some(json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "success": {"type": "boolean"},
-                                        "coverage": {"type": "number"},
-                                        "coverage_percentage": {"type": "string"},
-                                        "message": {"type": "string"}
-                                    },
-                                    "required": ["success", "coverage", "message"]
-                                }).as_object().unwrap().clone().into()),
-                                icons: None,
-                                annotations: Some(ToolAnnotations::new()
-                                    .read_only(false)
-                                    .destructive(false)
-                                    .idempotent(true)
-                                    .open_world(false)),
-                            },
-                            Tool {
-                                name: Cow::Borrowed("add_ai_review_report"),
-                                title: Some("Add AI Review Report".to_string()),
-                                description: Some(Cow::Borrowed("Add an AI code review report for a task in the AIReview phase. Supports multiple review types: CodeQuality (code structure and best practices), Security (security vulnerabilities and risks), Performance (performance bottlenecks and optimizations), Documentation (documentation completeness), Testing (test coverage and quality), and Architecture (architectural decisions and patterns). Each review requires a score (0.0-1.0), approval status, detailed content, and optional suggestions. Tasks require 3 AI model approvals before completion. Use this to record AI model reviews and track quality assurance progress.")),
-                                input_schema: json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "task_id": {"type": "string", "description": "Task ID"},
-                                        "model_name": {"type": "string", "description": "AI model name"},
-                                        "review_type": {"type": "string", "enum": ["CodeQuality", "Security", "Performance", "Documentation", "Testing", "Architecture"], "description": "Type of review"},
-                                        "content": {"type": "string", "description": "Review content"},
-                                        "score": {"type": "number", "description": "Review score (0.0-1.0)", "minimum": 0.0, "maximum": 1.0},
-                                        "approved": {"type": "boolean", "description": "Whether the code is approved"},
-                                        "suggestions": {"type": "array", "items": {"type": "string"}, "description": "List of suggestions"}
-                                    },
-                                    "required": ["task_id", "model_name", "review_type", "content", "score", "approved"]
-                                }).as_object().unwrap().clone().into(),
-                                output_schema: Some(json!({
-                                    "type": "object",
-                                    "properties": {
-                                        "success": {"type": "boolean"},
-                                        "model_name": {"type": "string"},
-                                        "review_type": {"type": "string"},
-                                        "score": {"type": "number"},
-                                        "approved": {"type": "boolean"},
-                                        "message": {"type": "string"}
-                                    },
-                                    "required": ["success", "model_name", "review_type", "score", "approved", "message"]
-                                }).as_object().unwrap().clone().into()),
-                                icons: None,
-                                annotations: Some(ToolAnnotations::new()
-                                    .read_only(false)
-                                    .destructive(false)
-                                    .idempotent(false)
-                                    .open_world(false)),
-                            },
+                            "required": ["task_id"]
+                        }).as_object().unwrap().clone().into(),
+                        output_schema: None,
+                        icons: None,
+                        annotations: Some(ToolAnnotations::new()
+                            .read_only(false)
+                            .destructive(false)
+                            .idempotent(true)
+                            .open_world(false)),
+                },
+                Tool {
+                    name: Cow::Borrowed("delete_task"),
+                    title: Some("Delete Task".to_string()),
+                    description: Some(Cow::Borrowed("Permanently delete a task from the queue by its ID. This operation is irreversible and removes all task data, including history, workflow status, and review reports. Use with caution as this cannot be undone. Only use this for cleanup of obsolete tasks or tasks that were created in error. Returns success status confirming deletion. For tasks that should be preserved for audit purposes, use cancel_task instead.")),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "task_id": {"type": "string", "description": "Task ID to delete"}
+                        },
+                        "required": ["task_id"]
+                    }).as_object().unwrap().clone().into(),
+                    output_schema: None,
+                    icons: None,
+                    annotations: Some(ToolAnnotations::new()
+                        .read_only(false)
+                        .destructive(true)
+                        .idempotent(true)
+                        .open_world(false)),
+                },
+                Tool {
+                    name: Cow::Borrowed("update_task"),
+                    title: Some("Update Task".to_string()),
+                    description: Some(Cow::Borrowed("Update an existing task's properties including name, command, description, priority, status, or project association. Allows partial updates - only specified fields will be changed. Can be used to change task priority, update descriptions, modify commands, or reassign to different projects. When updating status, ensure it follows the proper workflow sequence. Returns updated task information including all current properties and timestamps.")),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "task_id": {"type": "string", "description": "Task ID to update"},
+                            "name": {"type": "string", "description": "New task name"},
+                            "command": {"type": "string", "description": "New command"},
+                            "description": {"type": "string", "description": "New description"},
+                            "priority": {"type": "string", "enum": ["Low", "Normal", "High", "Critical"], "description": "New priority"},
+                            "status": {"type": "string", "enum": ["Planning", "Implementation", "TestCreation", "Testing", "AIReview", "Finalized", "Pending", "Running", "Completed", "Failed", "Cancelled"], "description": "New status"},
+                            "project_id": {"type": "string", "description": "Project ID to associate with task (empty string to remove association)"}
+                        },
+                        "required": ["task_id"]
+                    }).as_object().unwrap().clone().into(),
+                    output_schema: None,
+                    icons: None,
+                    annotations: Some(ToolAnnotations::new()
+                        .read_only(false)
+                        .destructive(false)
+                        .idempotent(false)
+                        .open_world(false)),
+                },
+                Tool {
+                    name: Cow::Borrowed("upsert_task"),
+                    title: Some("Upsert Task".to_string()),
+                    description: Some(Cow::Borrowed("Create a new task or update an existing one by name (insert or update). If a task with the given name exists, it will be updated; otherwise, a new task is created. This is useful for maintaining tasks that should be unique by name. Supports setting technical specifications and acceptance criteria upfront. Returns the task information indicating whether it was created or updated. Ideal for idempotent task submission where you want to ensure a task exists with specific properties.")),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string", "description": "Task name (used for lookup)"},
+                            "command": {"type": "string", "description": "Command to execute"},
+                            "description": {"type": "string", "description": "Task description"},
+                            "project_id": {"type": "string", "description": "Project ID to associate the task with"},
+                            "priority": {"type": "string", "enum": ["Low", "Normal", "High", "Critical"], "description": "Task priority"},
+                            "technical_specs": {"type": "string", "description": "Technical specifications"},
+                            "acceptance_criteria": {"type": "array", "items": {"type": "string"}, "description": "Acceptance criteria"}
+                        },
+                        "required": ["name", "command", "description", "project_id"]
+                    }).as_object().unwrap().clone().into(),
+                    output_schema: None,
+                    icons: None,
+                    annotations: Some(ToolAnnotations::new()
+                        .read_only(false)
+                        .destructive(false)
+                        .idempotent(true)
+                        .open_world(false)),
+                },
+                Tool {
+                    name: Cow::Borrowed("create_project"),
+                    title: Some("Create Project".to_string()),
+                    description: Some(Cow::Borrowed("Create a new project to organize and group related tasks. Projects serve as containers for tasks that belong to the same initiative, feature, or module. Returns the project ID which can be used when creating tasks. Projects help with task organization, progress tracking, and reporting. Use this before creating tasks to establish proper project structure and organization.")),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string", "description": "Project name"},
+                            "description": {"type": "string", "description": "Project description"}
+                        },
+                        "required": ["name"]
+                    }).as_object().unwrap().clone().into(),
+                    output_schema: None,
+                    icons: None,
+                    annotations: Some(ToolAnnotations::new()
+                        .read_only(false)
+                        .destructive(false)
+                        .idempotent(false)
+                        .open_world(false)),
+                },
+                Tool {
+                    name: Cow::Borrowed("get_project"),
+                    title: Some("Get Project".to_string()),
+                    description: Some(Cow::Borrowed("Get detailed information about a specific project by its ID. Returns comprehensive project details including name, description, status, creation and update timestamps, due dates, tags, and custom metadata. Use this to retrieve project information, check project status, or get project metadata before creating or querying tasks.")),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "project_id": {"type": "string", "description": "Project ID"}
+                        },
+                        "required": ["project_id"]
+                    }).as_object().unwrap().clone().into(),
+                    output_schema: None,
+                    icons: None,
+                    annotations: Some(ToolAnnotations::new()
+                        .read_only(true)
+                        .idempotent(true)
+                        .open_world(false)),
+                },
+                Tool {
+                    name: Cow::Borrowed("list_projects"),
+                    title: Some("List Projects".to_string()),
+                    description: Some(Cow::Borrowed("List all projects in the system. Returns a summary of all projects including their ID, name, status, and creation timestamp. Use this to discover available projects, find project IDs for task creation, or get an overview of all active projects in the system. Essential for project discovery and selection.")),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {}
+                    }).as_object().unwrap().clone().into(),
+                    output_schema: None,
+                    icons: None,
+                    annotations: Some(ToolAnnotations::new()
+                        .read_only(true)
+                        .idempotent(true)
+                        .open_world(false)),
+                },
+                Tool {
+                    name: Cow::Borrowed("get_project_tasks"),
+                    title: Some("Get Project Tasks".to_string()),
+                    description: Some(Cow::Borrowed("Get all tasks associated with a specific project. Returns a list of tasks belonging to the specified project, including task ID, name, status, current workflow phase, and priority. Useful for viewing all tasks within a project, tracking project progress, or identifying tasks that need attention. Provides quick overview of project workload and status distribution.")),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "project_id": {"type": "string", "description": "Project ID"}
+                        },
+                        "required": ["project_id"]
+                    }).as_object().unwrap().clone().into(),
+                    output_schema: None,
+                    icons: None,
+                    annotations: Some(ToolAnnotations::new()
+                        .read_only(true)
+                        .idempotent(true)
+                        .open_world(false)),
+                },
+                Tool {
+                    name: Cow::Borrowed("advance_workflow_phase"),
+                    title: Some("Advance Workflow Phase".to_string()),
+                    description: Some(Cow::Borrowed("Advance a task to the next development workflow phase. The workflow follows this sequence: NotStarted → Planning → Implementation → TestCreation → Testing → AIReview → Completed. Each phase transition is validated to ensure requirements are met. Returns the new workflow status and detailed instructions for the next phase. CRITICAL: Use this tool only when current phase requirements are fully satisfied (e.g., documentation complete for Planning, all tests passing for Testing).")),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "task_id": {"type": "string", "description": "Task ID to advance"}
+                        },
+                        "required": ["task_id"]
+                    }).as_object().unwrap().clone().into(),
+                    output_schema: None,
+                    icons: None,
+                    annotations: Some(ToolAnnotations::new()
+                        .read_only(false)
+                        .destructive(false)
+                        .idempotent(false)
+                        .open_world(false)),
+                },
+                Tool {
+                    name: Cow::Borrowed("set_technical_documentation"),
+                    title: Some("Set Technical Documentation".to_string()),
+                    description: Some(Cow::Borrowed("Set the technical documentation path for a task in the Planning phase. This documents where the technical specifications, architecture decisions, and implementation details are stored. Required before advancing from Planning to Implementation phase. The documentation should include all implementation details, API contracts, data structures, and architectural decisions. Use this when documentation is complete and ready for implementation.")),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "task_id": {"type": "string", "description": "Task ID"},
+                            "doc_path": {"type": "string", "description": "Path to technical documentation"}
+                        },
+                        "required": ["task_id", "doc_path"]
+                    }).as_object().unwrap().clone().into(),
+                    output_schema: None,
+                    icons: None,
+                    annotations: Some(ToolAnnotations::new()
+                        .read_only(false)
+                        .destructive(false)
+                        .idempotent(true)
+                        .open_world(false)),
+                },
+                Tool {
+                    name: Cow::Borrowed("set_test_coverage"),
+                    title: Some("Set Test Coverage".to_string()),
+                    description: Some(Cow::Borrowed("Set the test coverage percentage for a task in the Testing phase. Coverage value should be between 0.0 and 1.0 (0% to 100%). This documents the actual test coverage achieved after running tests. Minimum 85% coverage is typically required before advancing to AIReview phase. Use this after executing tests and calculating coverage to record the quality metrics. Essential for tracking testing completeness and quality standards.")),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "task_id": {"type": "string", "description": "Task ID"},
+                            "coverage": {"type": "number", "description": "Test coverage percentage (0.0-1.0)", "minimum": 0.0, "maximum": 1.0}
+                        },
+                        "required": ["task_id", "coverage"]
+                    }).as_object().unwrap().clone().into(),
+                    output_schema: None,
+                    icons: None,
+                    annotations: Some(ToolAnnotations::new()
+                        .read_only(false)
+                        .destructive(false)
+                        .idempotent(true)
+                        .open_world(false)),
+                },
+                Tool {
+                    name: Cow::Borrowed("add_ai_review_report"),
+                    title: Some("Add AI Review Report".to_string()),
+                    description: Some(Cow::Borrowed("Add an AI code review report for a task in the AIReview phase. Supports multiple review types: CodeQuality (code structure and best practices), Security (security vulnerabilities and risks), Performance (performance bottlenecks and optimizations), Documentation (documentation completeness), Testing (test coverage and quality), and Architecture (architectural decisions and patterns). Each review requires a score (0.0-1.0), approval status, detailed content, and optional suggestions. Tasks require 3 AI model approvals before completion. Use this to record AI model reviews and track quality assurance progress.")),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "task_id": {"type": "string", "description": "Task ID"},
+                            "model_name": {"type": "string", "description": "AI model name"},
+                            "review_type": {"type": "string", "enum": ["CodeQuality", "Security", "Performance", "Documentation", "Testing", "Architecture"], "description": "Type of review"},
+                            "content": {"type": "string", "description": "Review content"},
+                            "score": {"type": "number", "description": "Review score (0.0-1.0)", "minimum": 0.0, "maximum": 1.0},
+                            "approved": {"type": "boolean", "description": "Whether the code is approved"},
+                            "suggestions": {"type": "array", "items": {"type": "string"}, "description": "List of suggestions"}
+                        },
+                        "required": ["task_id", "model_name", "review_type", "content", "score", "approved"]
+                    }).as_object().unwrap().clone().into(),
+                    output_schema: None,
+                    icons: None,
+                    annotations: Some(ToolAnnotations::new()
+                        .read_only(false)
+                        .destructive(false)
+                        .idempotent(false)
+                        .open_world(false)),
+                },
             ];
 
             Ok(ListToolsResult { 
