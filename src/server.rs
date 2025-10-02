@@ -321,10 +321,14 @@ impl TaskQueueServer {
         // Update .tasks file with new task ID
         // This helps AI models track existing tasks and avoid duplication
         if let Ok(tasks_content) = tokio::fs::read_to_string(".tasks").await {
+            // Convert SystemTime to DateTime<Utc> for RFC3339 formatting
+            let created_at_rfc3339 = chrono::DateTime::<chrono::Utc>::from(task.created_at)
+                .to_rfc3339();
+
             let task_entry = format!("# {}: {}\n#   Created: {}\n#   Status: {}\n#   Command: {}\n\n",
                 task_id,
                 task.name,
-                task.created_at.to_rfc3339(),
+                created_at_rfc3339,
                 format!("{:?}", task.status),
                 task.command
             );
