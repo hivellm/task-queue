@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2024"
 default-run = "task-queue"
 
+[[bin]]
+name = "task-queue"
+path = "src/main.rs"
 
 [dependencies]
 tokio = { version = "1.47", features = ["full"] }

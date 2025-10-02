@@ -22,7 +22,7 @@ impl VectorizerIntegration {
     pub async fn new() -> Result<Self> {
         let client = Client::new();
         let base_url = "http://localhost:15001".to_string();
-        let collection = "task-interactions".to_string();
+        let collection = "vectorizer-documentation".to_string();
         
         // Test connection (optional - don't fail if vectorizer is not available)
         let response = client
@@ -47,6 +47,15 @@ impl VectorizerIntegration {
         })
     }
 
+    /// Create a dummy vectorizer that does nothing (for when vectorizer is unavailable)
+    pub fn new_dummy() -> Self {
+        Self {
+            client: Client::new(),
+            base_url: "http://localhost:15001".to_string(),
+            collection: "vectorizer-documentation".to_string(),
+        }
+    }
+
     /// Store task context in vectorizer
     pub async fn store_task_context(&self, context: &TaskContext) -> Result<()> {
         // Create a rich text representation of the task context
@@ -69,7 +78,6 @@ impl VectorizerIntegration {
 
         // Insert into vectorizer
         let payload = json!({
-            "collection": self.collection,
             "texts": [{
                 "id": context.task_id.to_string(),
                 "text": text,
@@ -79,15 +87,22 @@ impl VectorizerIntegration {
 
         let response = self
             .client
-            .post(&format!("{}/api/insert_texts", self.base_url))
+            .post(&format!("{}/api/v1/collections/{}/vectors", self.base_url, self.collection))
             .json(&payload)
             .send()
-            .await?;
+            .await;
 
-        if !response.status().is_success() {
-            return Err(TaskQueueError::VectorizerError(
-                format!("Failed to store task context: {}", response.status())
-            ));
+        match response {
+            Ok(resp) => {
+                if !resp.status().is_success() {
+                    eprintln!("⚠️  Vectorizer returned error status: {} - Task context not stored", resp.status());
+                } else {
+                    println!("✅ Task context stored in vectorizer successfully");
+                }
+            }
+            Err(e) => {
+                eprintln!("⚠️  Failed to connect to vectorizer: {} - Task context not stored", e);
+            }
         }
 
         Ok(())
@@ -100,14 +115,14 @@ impl VectorizerIntegration {
         limit: Option<usize>,
     ) -> Result<Vec<TaskContextSearchResult>> {
         let payload = json!({
-            "collection": self.collection,
             "query": query,
-            "limit": limit.unwrap_or(10)
+            "limit": limit.unwrap_or(10),
+            "score_threshold": 0.1
         });
 
         let response = self
             .client
-            .post(&format!("{}/api/search_vectors", self.base_url))
+            .post(&format!("{}/api/v1/collections/{}/search", self.base_url, self.collection))
             .json(&payload)
             .send()
             .await?;

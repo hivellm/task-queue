@@ -627,7 +627,7 @@ impl ServerHandler for TaskQueueMcpServer {
                 Tool {
                     name: Cow::Borrowed("submit_task"),
                     title: Some("Submit Task".to_string()),
-                    description: Some(Cow::Borrowed("Submit a new task to the queue with automatic workflow initialization. Creates a task that enters the Planning phase immediately. The task will be associated with a project and assigned a priority level. Returns the task ID and detailed workflow instructions for the Planning phase. Use this to create new development tasks that need to follow the complete development workflow with documentation, implementation, testing, and AI review phases.")),
+                    description: Some(Cow::Borrowed("Submit a new task to the queue with automatic workflow initialization. Creates a task that enters the Planning phase immediately. The task will be associated with a project and assigned a priority level. Returns the task ID and detailed workflow instructions for the Planning phase. IMPORTANT: Check the .tasks file in the project root before creating new tasks to avoid duplication. The .tasks file tracks all existing task IDs and should be consulted to prevent creating redundant tasks. Use this to create new development tasks that need to follow the complete development workflow with documentation, implementation, testing, and AI review phases.")),
                     input_schema: json!({
                         "type": "object",
                         "properties": {
@@ -772,7 +772,7 @@ impl ServerHandler for TaskQueueMcpServer {
                 Tool {
                     name: Cow::Borrowed("create_project"),
                     title: Some("Create Project".to_string()),
-                    description: Some(Cow::Borrowed("Create a new project to organize and group related tasks. Projects serve as containers for tasks that belong to the same initiative, feature, or module. Returns the project ID which can be used when creating tasks. Projects help with task organization, progress tracking, and reporting. Use this before creating tasks to establish proper project structure and organization.")),
+                    description: Some(Cow::Borrowed("Create a new project to organize and group related tasks. Projects serve as containers for tasks that belong to the same initiative, feature, or module. Returns the project ID which can be used when creating tasks. Projects help with task organization, progress tracking, and reporting. IMPORTANT: This will create a .tasks file in the project root to track all task IDs. AI models should check existing .tasks files before creating new projects to avoid duplication.")),
                     input_schema: json!({
                         "type": "object",
                         "properties": {

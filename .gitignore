@@ -106,6 +106,9 @@ flamegraph.svg
 # Vectorizer
 .vectorizer
 
+# Task tracking files
+.tasks
+
 # Docker
 .dockerignore
 

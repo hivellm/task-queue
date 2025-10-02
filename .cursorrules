@@ -1,0 +1,163 @@
+# Task Queue Project Rules
+
+## 🏗️ **Architecture & Design Patterns**
+
+### **Integrated Multi-Interface Architecture**
+- **SINGLE SERVER**: Unified server handles Web Dashboard, REST API, MCP, and WebSocket
+- **MULTI-INTERFACE**: All interfaces share the same business logic and data layer
+- **NO GRPC LAYER**: Task Queue doesn't use GRPC - everything is integrated in one server
+- **RULE**: All new features must be available across all interfaces (Dashboard, REST, MCP, WebSocket)
+
+### **Workflow Phases**
+- **MANDATORY**: All tasks follow Planning → Implementation → TestCreation → Testing → AIReview → Finalized
+- **ENFORCED**: Never skip phases - each phase has specific requirements
+- **DOCUMENTATION**: Technical documentation required before Implementation phase
+
+### **Project Management**
+- **TRACKING**: Always check `.tasks` file before creating new projects/tasks to avoid duplication
+- **REQUIRED**: `.tasks` file is automatically created for every project and tracks all task IDs
+- **VERIFICATION**: AI models must read existing `.tasks` files before creating new tasks
+
+## 🧪 **Testing Requirements**
+
+### **Test Execution**
+- **MANDATORY**: All tests must be actually executed using `cargo test`
+- **VERIFICATION**: Test results must be checked and failures fixed before advancing phases
+- **COVERAGE**: Minimum 85% code coverage required for all modules
+
+### **Integration Testing**
+- **REQUIRED**: All interfaces (Dashboard, REST API, MCP, WebSocket) must be tested together
+- **VALIDATION**: Cross-interface communication and data consistency must be verified
+
+## 🔧 **Development Workflow**
+
+### **Task Creation**
+- **CHECK FIRST**: Always read `.tasks` file in project root before creating new tasks
+- **AVOID DUPLICATION**: Never create duplicate tasks - check existing task IDs
+- **PROJECT VERIFICATION**: Ensure correct project ID is used for task association
+
+### **Phase Transitions**
+- **PLANNING**: Complete technical documentation in `/docs` directory
+- **IMPLEMENTATION**: Code according to planning documentation
+- **TESTCREATION**: Create comprehensive test suite
+- **TESTING**: Execute all tests and verify results
+- **AIREVIEW**: Get 3 AI model approvals before finalization
+
+## 📁 **File Organization**
+
+### **Project Structure**
+- **src/**: Core Rust implementation
+- **src/auth/**: Authentication and authorization modules
+- **src/mcp.rs**: MCP protocol implementation (SSE transport)
+- **src/server.rs**: Integrated multi-interface server (REST + MCP + WebSocket)
+- **src/websocket.rs**: Real-time WebSocket communication
+- **dashboard/**: Vue.js web dashboard
+- **cli/**: Command-line interface client
+- **docs/**: Documentation and specifications
+
+### **Tracking Files**
+- **.tasks**: Automatically generated task tracking file (added to .gitignore)
+- **task-queue.db/**: Persistent storage (sled database)
+- **logs/task-queue.log**: Application logs
+
+## 🔐 **Security & Authentication**
+
+### **API Keys**
+- **REQUIRED**: All external API calls require valid API keys
+- **VALIDATION**: API keys are validated on every request
+- **PERMISSIONS**: Role-based access control for different operations
+
+### **Rate Limiting**
+- **IMPLEMENTED**: Request rate limiting to prevent abuse
+- **CONFIGURABLE**: Rate limits configurable per endpoint and user
+
+## 📊 **Monitoring & Metrics**
+
+### **Prometheus Integration**
+- **METRICS**: All operations are instrumented with Prometheus metrics
+- **ENDPOINTS**: `/metrics` endpoint exposes metrics for monitoring
+- **DASHBOARD**: Grafana dashboard available for visualization
+
+### **Logging**
+- **STRUCTURED**: All logs use structured format with tracing
+- **LEVELS**: Configurable log levels (ERROR, WARN, INFO, DEBUG, TRACE)
+- **FILES**: Logs written to both console and `logs/task-queue.log`
+
+## 🚀 **Deployment & Production**
+
+### **Docker Support**
+- **CONTAINERS**: Multi-stage Docker builds for development and production
+- **COMPOSE**: Docker Compose files for local development
+- **KUBERNETES**: K8s manifests for production deployment
+
+### **Configuration**
+- **YAML**: Configuration via `config.yml` file
+- **ENVIRONMENT**: Environment variable support for sensitive data
+- **VALIDATION**: Configuration validation on startup
+
+## 📚 **Documentation Standards**
+
+### **API Documentation**
+- **OPENAPI**: REST API documented with OpenAPI 3.0 specification
+- **EXAMPLES**: Code examples in multiple languages
+- **TUTORIALS**: Step-by-step guides for common operations
+
+### **Code Documentation**
+- **COMMENTS**: All public functions have comprehensive documentation
+- **EXAMPLES**: Code examples in doc comments
+- **ARCHITECTURE**: Architecture decisions documented in code
+
+## 🔄 **Version Compatibility**
+
+### **Rust Edition**
+- **MANDATORY**: Rust Edition 2024 (required for advanced async patterns)
+- **COMPILER**: Must compile with stable Rust toolchain supporting Edition 2024
+- **DEPENDENCIES**: All dependencies must be compatible with Edition 2024
+
+### **API Stability**
+- **SEMVER**: Semantic versioning for API compatibility
+- **BREAKING**: Breaking changes require major version bump
+- **DEPRECATED**: Deprecated APIs marked with deprecation warnings
+
+## 🐛 **Bug Tracking & Fixes**
+
+### **Issue Management**
+- **PRIORITY**: Critical bugs fixed immediately
+- **TESTING**: All fixes include regression tests
+- **DOCUMENTATION**: Bug fixes documented in CHANGELOG.md
+
+### **Code Quality**
+- **CLIPPY**: All Clippy warnings must be resolved
+- **FORMATTING**: Code formatted with `rustfmt`
+- **TESTS**: All code changes include tests
+
+## 🎯 **Performance Requirements**
+
+### **Latency Targets**
+- **TASK SUBMISSION**: < 100ms end-to-end
+- **TASK RETRIEVAL**: < 50ms
+- **STATUS UPDATES**: < 10ms
+
+### **Scalability**
+- **CONCURRENT**: Support for 1000+ concurrent tasks
+- **MEMORY**: Efficient memory usage with bounded queues
+- **STORAGE**: Persistent storage with fast retrieval
+
+## 🔗 **Integration Requirements**
+
+### **Vectorizer Integration**
+- **OPTIONAL**: Vectorizer integration is optional and non-blocking
+- **GRACEFUL**: System continues to work if vectorizer is unavailable
+- **ASYNC**: All vectorizer calls are asynchronous and non-blocking
+
+### **External Services**
+- **RETRY**: Automatic retry logic for external service calls
+- **TIMEOUT**: Configurable timeouts for all external operations
+- **CIRCUIT BREAKER**: Circuit breaker pattern for fault tolerance
+
+### **Multi-Interface Consistency**
+- **MANDATORY**: All features must be available across Web Dashboard, REST API, MCP, and WebSocket
+- **DATA CONSISTENCY**: Same data models and business logic for all interfaces
+- **AUTHENTICATION**: Unified authentication across all interfaces
+- **REAL-TIME**: WebSocket provides live updates for all interfaces
+

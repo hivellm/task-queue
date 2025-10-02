@@ -25,7 +25,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower_http::cors::CorsLayer;
-use tracing::{info, error};
+use tracing::{info, error, warn};
 
 /// Task queue server state
 pub struct TaskQueueServer {
@@ -41,7 +41,14 @@ impl TaskQueueServer {
     /// Create a new task queue server
     pub async fn new() -> Result<Self> {
         let storage = Arc::new(StorageEngine::new().await?);
-        let vectorizer = Arc::new(VectorizerIntegration::new().await?);
+        let vectorizer = match VectorizerIntegration::new().await {
+            Ok(v) => Arc::new(v),
+            Err(e) => {
+                warn!("Failed to initialize vectorizer (non-critical): {} - Continuing without vectorization", e);
+                // Create a dummy vectorizer that does nothing
+                Arc::new(VectorizerIntegration::new_dummy())
+            }
+        };
         let metrics = Arc::new(MetricsCollector::new());
 
         let server = Self {
@@ -120,7 +127,39 @@ impl TaskQueueServer {
         
         // Store in persistent storage
         self.storage.store_project(&project).await?;
-        
+
+        // Create .tasks file for project tracking
+        // This helps AI models avoid creating duplicate projects/tasks
+        let tasks_file_path = format!(".tasks");
+        if let Ok(mut file) = tokio::fs::File::create(&tasks_file_path).await {
+            let tasks_content = format!(
+                "# Task IDs for project: {}\n\
+                # This file tracks all tasks created for this project\n\
+                # AI models should check this file before creating new projects/tasks\n\
+                # to avoid duplication. Add new task IDs as they are created.\n\
+                # Format: task_id: description\n\n\
+                # Project Information:\n\
+                # ID: {}\n\
+                # Name: {}\n\
+                # Description: {}\n\
+                # Created: {}\n\n\
+                # Task IDs (add new tasks below):\n",
+                project.name,
+                project_id,
+                project.name,
+                project.description.as_deref().unwrap_or("No description"),
+                project.created_at.to_rfc3339()
+            );
+
+            if let Err(e) = tokio::fs::write(&tasks_file_path, tasks_content).await {
+                warn!("Failed to create .tasks file for project {}: {}", project_id, e);
+            } else {
+                info!("Created .tasks tracking file for project: {}", project.name);
+            }
+        } else {
+            warn!("Failed to create .tasks file for project: {}", project.name);
+        }
+
         info!("Created project with ID: {}", project_id);
         Ok(project_id)
     }
@@ -278,8 +317,36 @@ impl TaskQueueServer {
         
         // Store in persistent storage
         self.storage.store_task(&task).await?;
-        
-        // Store in vectorizer
+
+        // Update .tasks file with new task ID
+        // This helps AI models track existing tasks and avoid duplication
+        if let Ok(tasks_content) = tokio::fs::read_to_string(".tasks").await {
+            let task_entry = format!("# {}: {}\n#   Created: {}\n#   Status: {}\n#   Command: {}\n\n",
+                task_id,
+                task.name,
+                task.created_at.to_rfc3339(),
+                format!("{:?}", task.status),
+                task.command
+            );
+
+            let updated_content = if tasks_content.contains("# Task IDs (add new tasks below):") {
+                // Insert after the header
+                tasks_content.replace("# Task IDs (add new tasks below):\n", &format!("# Task IDs (add new tasks below):\n{}", task_entry))
+            } else {
+                // Append to end if header not found
+                format!("{}\n{}", tasks_content, task_entry)
+            };
+
+            if let Err(e) = tokio::fs::write(".tasks", updated_content).await {
+                warn!("Failed to update .tasks file for task {}: {}", task_id, e);
+            } else {
+                info!("Updated .tasks file with new task: {}", task.name);
+            }
+        } else {
+            warn!("Could not read .tasks file to update with new task: {}", task.name);
+        }
+
+        // Store in vectorizer (non-blocking - don't fail task submission if vectorizer fails)
         let context = TaskContext {
             task_id,
             project: task.project.clone(),
@@ -300,7 +367,16 @@ impl TaskQueueServer {
             artifacts: vec![],
             logs: vec!["Task submitted to queue".to_string()],
         };
-        self.vectorizer.store_task_context(&context).await?;
+        
+        // Try to store in vectorizer, but don't fail the task submission if it fails
+        match self.vectorizer.store_task_context(&context).await {
+            Ok(_) => {
+                info!("Task context stored in vectorizer: {}", task_id);
+            },
+            Err(e) => {
+                warn!("Failed to store task context in vectorizer (non-critical): {} - Error: {}", task_id, e);
+            }
+        }
         
         // Update metrics
         self.metrics.increment_tasks_submitted();

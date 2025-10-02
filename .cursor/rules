@@ -1,0 +1,398 @@
+# Task Queue Rust Code Rules - Cursor IDE Configuration
+# These rules define coding standards for the Task Queue project
+# Multi-interface server: Web Dashboard + REST API + MCP + WebSocket + CLI
+# They ensure consistency across the codebase and promote best practices
+
+# ⚠️ CRITICAL ARCHITECTURE RULE ⚠️
+# =============================================================================
+# INTEGRATED MULTI-INTERFACE SERVER ARCHITECTURE
+# =============================================================================
+#
+# - Task Queue Server: Single unified server handling all protocols
+# - REST API: HTTP endpoints for programmatic access
+# - Web Dashboard: Vue.js web interface for task management
+# - MCP Server: Model Context Protocol with SSE transport using rmcp crate
+# - WebSocket: Real-time updates for task status and events
+# - CLI Client: Command-line interface for server management
+#
+# RULE: All protocols share the same server instance and data
+#
+# Architecture Flow:
+# Web Dashboard / REST API / MCP SSE / WebSocket / CLI → Task Queue Server → Task Operations
+#
+# Key Characteristics:
+# - Single binary handles REST, MCP, and WebSocket protocols
+# - No separate GRPC layer (unlike Vectorizer)
+# - MCP uses Server-Sent Events (SSE) via rmcp crate
+# - WebSocket provides real-time task status updates
+# - CLI connects to server via REST API
+#
+# =============================================================================
+
+# =============================================================================
+# 🚨 RUST EDITION REQUIREMENT - NON-NEGOTIABLE 🚨
+# =============================================================================
+#
+# CRITICAL: This project uses Rust Edition 2024
+#
+# - Edition in Cargo.toml: MUST be "2024" (never change to 2021 or other)
+# - Reason: Requires Edition 2024 features for advanced async patterns and optimizations
+# - NEVER CHANGE: Downgrading breaks compilation and loses critical features
+# - Build Environment: Must use Rust toolchain with Edition 2024 support
+#
+# Consequences of changing edition:
+# - Compilation failures for Edition 2024 specific code
+# - Loss of advanced language features
+# - Performance regressions
+# - Dependency incompatibility
+#
+# =============================================================================
+
+# =============================================================================
+# GENERAL CODING STANDARDS
+# =============================================================================
+
+# Documentation Requirements
+# - All public functions, structs, enums, and modules MUST have documentation comments
+# - Use `//!` for module-level documentation
+# - Use `///` for item-level documentation
+# - Include parameter descriptions and return value explanations
+# - Document error conditions and edge cases
+
+# Naming Conventions
+# - Functions and variables: snake_case
+# - Structs, enums, traits: PascalCase
+# - Constants: SCREAMING_SNAKE_CASE
+# - Modules: snake_case
+# - Generic type parameters: single uppercase letters (T, U, V) or descriptive names
+
+# Code Organization
+# - Group related functionality in modules
+# - Use clear module hierarchy (api/, auth/, grpc/, models/, queue/, etc.)
+# - Keep functions under 50 lines when possible
+# - Use meaningful variable names, avoid single-letter variables except in generics
+
+# =============================================================================
+# RUST-SPECIFIC PATTERNS
+# =============================================================================
+
+# Error Handling
+# - Use `TaskQueueError` enum for domain-specific errors
+# - Implement `From` traits for external error types
+# - Use `Result<T, TaskQueueError>` for fallible operations
+# - Prefer `?` operator for error propagation
+# - Use `anyhow::Context` for adding context to errors
+
+# Concurrency Patterns
+# - Use `Arc` for shared ownership across threads
+# - Use `RwLock` for read-heavy concurrent access
+# - Use `DashMap` for concurrent key-value operations
+# - Prefer async/await over manual futures
+# - Use `tokio::sync` primitives for cross-task communication
+
+# Memory Management
+# - Prefer stack allocation when possible
+# - Use `Arc` for shared heap data
+# - Minimize allocations in hot paths
+# - Use `Cow` for read-only data that might need mutation
+# - Implement `Drop` for custom cleanup when necessary
+
+# Serialization
+# - Use `#[derive(Serialize, Deserialize)]` for data structures
+# - Use `serde` attributes for custom serialization behavior
+# - Prefer JSON for human-readable formats
+# - Use `bincode` for efficient binary serialization
+# - Validate serialized data on deserialization
+
+# =============================================================================
+# STRUCT AND ENUM PATTERNS
+# =============================================================================
+
+# Struct Derives (always include in this order)
+# #[derive(Debug, Clone, Serialize, Deserialize)]
+# Add additional derives as needed: PartialEq, Eq, Hash, Default
+
+# Enum Patterns
+# - Use `#[serde(rename_all = "lowercase")]` for API enums
+# - Implement `Display` trait for user-facing enums
+# - Use exhaustive match expressions (avoid `_` when possible)
+# - Document enum variants clearly
+
+# Configuration Structs
+# - Implement `Default` trait for all config structs
+# - Use builder pattern for complex configurations
+# - Validate configuration values on creation
+# - Document default values and valid ranges
+
+# =============================================================================
+# FUNCTION PATTERNS
+# =============================================================================
+
+# Function Signatures
+# - Use descriptive parameter names
+# - Prefer `&str` over `&String` for read-only string parameters
+# - Use `impl Trait` for return types when appropriate
+# - Group parameters logically, put required params first
+
+# Async Functions
+# - Use async/await syntax consistently
+# - Prefer `tokio::spawn` for background tasks
+# - Use `StreamExt` for stream processing
+# - Handle cancellation properly with `select!`
+
+# Error Handling Functions
+# - Return `Result<T, TaskQueueError>` for fallible operations
+# - Use custom error variants for domain-specific errors
+# - Provide meaningful error messages
+# - Log errors at appropriate levels (debug, info, warn, error)
+
+# =============================================================================
+# TESTING PATTERNS
+# =============================================================================
+
+# Unit Tests
+# - Place tests in `#[cfg(test)]` modules
+# - Use descriptive test function names: `test_function_name_condition`
+# - Test both success and failure cases
+# - Use `assert_eq!`, `assert!`, `assert_matches!` appropriately
+
+# Integration Tests
+# - Place in `tests/` directory
+# - Test end-to-end functionality
+# - Clean up resources properly
+# - Use realistic test data
+
+# Benchmark Tests
+# - Use `criterion` for performance benchmarks
+# - Include baseline comparisons
+# - Test with realistic data sizes
+# - Measure both throughput and latency
+
+# =============================================================================
+# PERFORMANCE OPTIMIZATIONS
+# =============================================================================
+
+# Memory Efficiency
+# - Pre-allocate vectors when size is known
+# - Use `shrink_to_fit()` after building collections
+# - Minimize heap allocations in hot loops
+# - Use `SmallVec` or `TinyVec` for small collections
+
+# CPU Efficiency
+# - Use parallel processing with `rayon` when beneficial
+# - Prefer iterator chains over manual loops
+# - Use `#[inline]` for small frequently-called functions
+# - Profile code to identify bottlenecks
+
+# I/O Efficiency
+# - Use async I/O for network operations
+# - Buffer reads/writes appropriately
+# - Use memory-mapped files for large data
+# - Implement streaming for large datasets
+
+# =============================================================================
+# API DESIGN PATTERNS
+# =============================================================================
+
+# REST API Endpoints
+# - Use consistent URL patterns: `/api/v1/resource/action`
+# - Return appropriate HTTP status codes
+# - Use JSON for request/response bodies
+# - Implement proper error responses with error codes
+# - Support both JSON and form-encoded requests
+# - Include health check endpoint: `/health`
+
+# MCP (Model Context Protocol)
+# - Follow MCP specification strictly
+# - Use rmcp crate with SSE transport for Cursor compatibility
+# - Implement proper tool schemas with detailed descriptions
+# - Handle tool calls and responses correctly
+# - Document tool capabilities clearly in tool definitions
+# - Support both synchronous and asynchronous tool execution
+# - MCP SSE endpoint: `/mcp/sse`
+
+# WebSocket Protocol
+# - Use WebSocket for real-time task status updates
+# - Implement proper connection management and cleanup
+# - Handle authentication and authorization
+# - Support reconnection and heartbeat mechanisms
+# - WebSocket endpoint: `/ws`
+# - Support selective subscriptions to specific tasks/projects
+
+# Multi-Interface Integration
+# - All interfaces (Web Dashboard, REST API, MCP, WebSocket, CLI) share the same server instance
+# - Single data layer and business logic for all interfaces
+# - No protocol translation overhead
+# - Consistent authentication and authorization across all interfaces
+# - Dashboard uses REST API + WebSocket internally
+
+# =============================================================================
+# CONFIGURATION PATTERNS
+# =============================================================================
+
+# Workspace Configuration
+# - Use YAML for human-editable configuration
+# - Provide sensible defaults
+# - Validate configuration on load
+# - Support environment variable overrides
+
+# Runtime Configuration
+# - Use builder patterns for complex setup
+# - Validate configuration early
+# - Log configuration on startup
+# - Support hot-reloading when possible
+
+# =============================================================================
+# LOGGING PATTERNS
+# =============================================================================
+
+# Log Levels
+# - `error`: System errors that require immediate attention
+# - `warn`: Unexpected conditions that don't break functionality
+# - `info`: Important state changes and user actions
+# - `debug`: Detailed information for troubleshooting
+# - `trace`: Very detailed execution flow information
+
+# Log Context
+# - Include relevant IDs (task IDs, queue names, etc.)
+# - Use structured logging when possible
+# - Include timing information for performance-critical operations
+# - Log configuration on startup
+
+# =============================================================================
+# DEPENDENCY MANAGEMENT
+# =============================================================================
+
+# Cargo.toml Organization
+# - Group dependencies logically (core, async, queue, etc.)
+# - Use feature flags appropriately
+# - Pin major versions for stability
+# - Minimize dependency count
+
+# Feature Flags
+# - Use descriptive feature names
+# - Document feature purposes
+# - Test feature combinations
+# - Default features should provide basic functionality
+
+# =============================================================================
+# BUILD AND DEPLOYMENT
+# =============================================================================
+
+# Build Scripts
+# - Use `build.rs` for code generation
+# - Compile C/CUDA code as needed
+# - Generate version information
+# - Validate build environment
+
+# Cross-Compilation
+# - Support multiple target architectures
+# - Test on different platforms
+# - Handle platform-specific code appropriately
+# - Document platform requirements
+
+# =============================================================================
+# TASK QUEUE SPECIFIC PATTERNS
+# =============================================================================
+
+# Workflow Management
+# - MANDATORY: All tasks follow Planning → Implementation → TestCreation → Testing → AIReview → Finalized
+# - ENFORCED: Never skip phases - each phase has specific requirements
+# - DOCUMENTATION: Technical documentation required before Implementation phase
+
+# Task Tracking
+# - CHECK FIRST: Always read `.tasks` file before creating new tasks
+# - AVOID DUPLICATION: Never create duplicate tasks - check existing task IDs
+# - PROJECT VERIFICATION: Ensure correct project ID is used for task association
+
+# Queue Operations
+# - Use atomic operations for queue state changes
+# - Implement proper locking for concurrent task access
+# - Handle task priority and scheduling correctly
+# - Support task cancellation and timeout
+# - Implement fair scheduling and resource limits
+
+# Multi-Interface Consistency
+# - All features must be available across Web Dashboard, REST API, MCP, and WebSocket
+# - Consistent data models and error handling across all interfaces
+# - Authentication and authorization work the same way for all interfaces
+# - CLI client and Web Dashboard both use REST API + WebSocket internally
+
+# Persistence
+# - Use sled database for reliable task storage
+# - Implement proper serialization for task states
+# - Handle database migrations safely
+# - Backup critical task data regularly
+# - Support data export/import for migration
+
+# Real-time Updates
+# - Use WebSocket for live task status updates
+# - Implement proper connection pooling
+# - Handle client disconnections gracefully
+# - Support selective subscriptions to specific tasks/projects
+
+# Server Execution
+# =============================================================================
+# CRITICAL: Task Queue uses integrated multi-protocol server
+# =============================================================================
+#
+# Starting the Server:
+# - Command: cargo run
+# - Alternative: cargo run -- --host 127.0.0.1 --port 16080
+# - Alternative: ./target/release/task-queue (after cargo build --release)
+#
+# Stopping the Server:
+# - Command: Ctrl+C
+# - Alternative: pkill -f task-queue
+#
+# Architecture Flow:
+# REST/MCP/WebSocket Clients → Task Queue Server → Task Operations
+#
+# Ports (configured in config.yml):
+# - REST API: http://127.0.0.1:16080 (default)
+# - Web Dashboard: http://127.0.0.1:16080/ (Vue.js interface)
+# - MCP SSE: http://127.0.0.1:16080/mcp/sse (same server instance)
+# - WebSocket: ws://127.0.0.1:16080/ws (real-time updates)
+# - Health Check: http://127.0.0.1:16080/health
+#
+# Key Points:
+# - Single binary handles REST, MCP, and WebSocket protocols
+# - MCP uses Server-Sent Events (SSE) transport via rmcp crate
+# - WebSocket provides real-time task status updates
+# - No separate services - everything runs in one process
+# - Configuration loaded from config.yml
+#
+# CLI Client (separate):
+# - Connects to server via REST API
+# - Command: cd cli && cargo run -- [command]
+# - Default server URL: http://localhost:16080
+#
+# Web Dashboard (integrated):
+# - Vue.js interface served by the same server
+# - Provides visual task management and monitoring
+# - Real-time updates via WebSocket
+# - Accessible at root URL: http://localhost:16080/
+#
+# =============================================================================
+
+# =============================================================================
+# SECURITY CONSIDERATIONS
+# =============================================================================
+
+# Input Validation
+# - Validate all user inputs
+# - Use safe deserialization practices
+# - Limit resource usage (memory, CPU, disk)
+# - Implement rate limiting
+
+# Authentication & Authorization
+# - Use secure authentication mechanisms
+# - Implement proper authorization checks
+# - Log security events
+# - Follow principle of least privilege
+
+# Data Protection
+# - Encrypt sensitive data at rest
+# - Use secure communication channels
+# - Implement proper access controls
+# - Follow data minimization principles
