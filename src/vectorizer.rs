@@ -21,19 +21,19 @@ impl VectorizerIntegration {
     /// Create a new vectorizer integration
     pub async fn new() -> Result<Self> {
         let client = Client::new();
-        let base_url = "http://localhost:15001".to_string();
-        let collection = "vectorizer-documentation".to_string();
+        let base_url = "http://localhost:15002".to_string();
+        let collection = "task-interactions".to_string();
         
         // Test connection (optional - don't fail if vectorizer is not available)
         let response = client
-            .get(&format!("{}/api/v1/health", base_url))
+            .get(&format!("{}/health", base_url))
             .timeout(std::time::Duration::from_secs(5))
             .send()
             .await;
             
         match response {
             Ok(resp) if resp.status().is_success() => {
-                //println!("✅ Vectorizer connection successful");
+                println!("✅ Vectorizer connection successful");
             }
             _ => {
                 println!("⚠️  Vectorizer not available - running without vectorization");
@@ -51,8 +51,8 @@ impl VectorizerIntegration {
     pub fn new_dummy() -> Self {
         Self {
             client: Client::new(),
-            base_url: "http://localhost:15001".to_string(),
-            collection: "vectorizer-documentation".to_string(),
+            base_url: "http://localhost:15002".to_string(),
+            collection: "task-interactions".to_string(),
         }
     }
 
@@ -76,7 +76,7 @@ impl VectorizerIntegration {
             }
         });
 
-        // Insert into vectorizer
+        // Use MCP-style endpoint for insertion
         let payload = json!({
             "texts": [{
                 "id": context.task_id.to_string(),
@@ -85,9 +85,10 @@ impl VectorizerIntegration {
             }]
         });
 
+        // Try the MCP-style endpoint first
         let response = self
             .client
-            .post(&format!("{}/api/v1/collections/{}/vectors", self.base_url, self.collection))
+            .post(&format!("{}/insert_texts", self.base_url))
             .json(&payload)
             .send()
             .await;
@@ -122,7 +123,7 @@ impl VectorizerIntegration {
 
         let response = self
             .client
-            .post(&format!("{}/api/v1/collections/{}/search", self.base_url, self.collection))
+            .post(&format!("{}/collections/{}/search", self.base_url, self.collection))
             .json(&payload)
             .send()
             .await?;

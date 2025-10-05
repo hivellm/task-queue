@@ -22,6 +22,7 @@ The Task Queue System is a comprehensive, enterprise-grade task management platf
 - **Workflow Engine**: Advanced workflow management with dependency resolution
 - **Development Workflow**: Structured 5-phase development process (Planning → Implementation → Test Creation → Testing → AI Review)
 - **MCP Integration**: Native support for AI model interaction through Model Context Protocol
+- **Vectorizer Integration**: Advanced integration with Vectorizer v0.3.0 for semantic search and context persistence
 - **Multiple Interfaces**: HTTP REST API, CLI tool, Python SDK, and interactive dashboard
 - **Real-time Monitoring**: Live task status updates and progress tracking
 - **Extensible Architecture**: Plugin system for custom functionality
@@ -334,7 +335,30 @@ Create a `config.yml` file in the project root:
 server:
   host: "0.0.0.0"
   port: 16080
+  grpc_port: 16081
+  mcp_port: 16082
   database_path: "./task-queue-data/task-queue.db"
+
+storage:
+  database_path: "./task-queue-data/task-queue.db"
+  backup_interval: "1h"
+  retention_days: 30
+
+vectorizer:
+  endpoint: "http://localhost:15002"
+  collection: "task-interactions"
+  auto_index: true
+
+execution:
+  max_concurrent_tasks: 10
+  default_timeout: "5m"
+  retry_attempts: 3
+  retry_delay: "1s"
+
+monitoring:
+  metrics_enabled: true
+  metrics_port: 9090
+  health_check_interval: "30s"
 
 logging:
   level: "info"
@@ -345,6 +369,72 @@ development:
   enable_metrics: true
   enable_cors: true
 ```
+
+### Vectorizer Integration
+
+The Task Queue system integrates with Vectorizer v0.3.0 for advanced semantic search and context persistence capabilities.
+
+#### Vectorizer Configuration
+
+```yaml
+vectorizer:
+  endpoint: "http://localhost:15002"  # Vectorizer server endpoint
+  collection: "task-interactions"     # Collection name for task data
+  auto_index: true                     # Automatically index task interactions
+```
+
+#### Features
+
+- **Task Context Persistence**: All task executions are automatically stored in the vectorizer
+- **Semantic Search**: Search through task history using natural language queries
+- **Context Awareness**: Tasks can access rich context from previous executions
+- **Learning System**: The system learns from task execution patterns and outcomes
+- **Recommendation Engine**: Get intelligent task recommendations based on historical data
+
+#### Integration Details
+
+The integration uses the `/insert_texts` endpoint of the Vectorizer API to store task interactions:
+
+```rust
+// Task context is automatically stored
+let context = TaskContext {
+    task_id: "build-api",
+    project: "hivellm-governance",
+    execution_time: Duration::from_secs(45),
+    result: TaskResult::Success,
+    artifacts: vec!["api-server", "documentation"],
+    dependencies: vec!["run-tests"],
+    logs: vec!["Build completed successfully"]
+};
+
+// Automatically stored in vectorizer collection
+vectorizer.store_task_context(&context).await?;
+```
+
+#### Search Capabilities
+
+```rust
+// Search for similar tasks
+let similar_tasks = vectorizer.search_task_contexts(
+    "API deployment with tests",
+    Some(10) // limit
+).await?;
+
+// Get task recommendations
+let recommendations = vectorizer.get_task_recommendations(
+    &current_task,
+    Some(5) // limit
+).await?;
+```
+
+#### Collection Management
+
+The system automatically creates and manages the `task-interactions` collection in the Vectorizer:
+
+- **Dimension**: 512 (configurable)
+- **Metric**: Cosine similarity
+- **Auto-indexing**: Enabled by default
+- **Retention**: Configurable through vectorizer settings
 
 ### CLI Configuration
 

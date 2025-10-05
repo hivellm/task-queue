@@ -17,6 +17,8 @@ Task Queue is an advanced task orchestration system built in Rust, specifically 
 - **Semantic Search**: Search task history and patterns
 - **Context Awareness**: Tasks have rich context from previous executions
 - **Learning System**: System learns from task execution patterns
+- **Vectorizer v0.3.0**: Compatible with latest Vectorizer interface
+- **Collection Management**: Automatic collection creation and management
 
 ### ⚡ **High Performance**
 - **Rust Performance**: Native speed with memory safety
@@ -380,3 +382,15 @@ class DevToolsMCPServer {
 - **Resource Limits**: CPU, memory and time limits
 
 This task-queue system provides the advanced orchestration capabilities needed for the HiveLLM ecosystem, maintaining high performance and reliability.
+
+## Documentation
+
+- [Complete Documentation](docs/COMPLETE_DOCUMENTATION.md) - Comprehensive system documentation
+- [API Documentation](docs/API_DOCUMENTATION.md) - HTTP API reference
+- [Vectorizer Integration](docs/VECTORIZER_INTEGRATION.md) - Advanced semantic search integration
+- [Development Roadmap](docs/DEVELOPMENT_ROADMAP.md) - Future development plans
+- [Testing Guide](docs/TESTING_EXECUTION_GUIDE.md) - Testing and validation procedures
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a detailed list of changes and updates.

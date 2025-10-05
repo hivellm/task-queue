@@ -72,10 +72,53 @@ echo -e "${BLUE}🔍 Checking ports 16080 and 16081...${NC}"
 wait_for_port 16080
 wait_for_port 16081
 
+# Create necessary directories
+echo -e "${BLUE}📁 Creating necessary directories...${NC}"
+mkdir -p data logs
+
+# Create config file if it doesn't exist
+if [ ! -f "config.yml" ]; then
+    echo -e "${BLUE}📝 Creating config.yml...${NC}"
+    cat > config.yml << 'EOF'
+server:
+  host: "0.0.0.0"
+  port: 16080
+  grpc_port: 16081
+  mcp_port: 16082
+
+storage:
+  database_path: "./data/task-queue.db"
+  backup_interval: "1h"
+  retention_days: 30
+
+vectorizer:
+  endpoint: "http://localhost:15002"
+  collection: "task-interactions"
+  auto_index: false
+
+execution:
+  max_concurrent_tasks: 10
+  default_timeout: "5m"
+  retry_attempts: 3
+  retry_delay: "1s"
+
+monitoring:
+  metrics_enabled: true
+  metrics_port: 9090
+  health_check_interval: "30s"
+EOF
+fi
+
 # Build the project
 echo -e "${BLUE}🔨 Building project...${NC}"
 if ! cargo build --release; then
     echo -e "${RED}❌ Build failed${NC}"
+    exit 1
+fi
+
+# Verify binary exists
+if [ ! -f "./target/release/task-queue" ]; then
+    echo -e "${RED}❌ Binary not found at ./target/release/task-queue${NC}"
     exit 1
 fi
 

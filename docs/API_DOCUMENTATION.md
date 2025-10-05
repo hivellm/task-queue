@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Task Queue HTTP API provides RESTful endpoints for managing tasks and workflows in the task orchestration system. The API is built on top of Axum and provides comprehensive functionality for task management, dependency resolution, and workflow orchestration.
+The Task Queue HTTP API provides RESTful endpoints for managing tasks and workflows in the task orchestration system. The API is built on top of Axum and provides comprehensive functionality for task management, dependency resolution, and workflow orchestration. It includes advanced integration with Vectorizer v0.3.0 for semantic search and context persistence.
 
 ## Base URL
 
