@@ -265,3 +265,90 @@ pub struct TaskRecommendation {
     pub suggested_artifacts: Vec<String>,
     pub execution_time_estimate: std::time::Duration,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::{Task, TaskResult, TaskType};
+
+    #[tokio::test]
+    async fn test_vectorizer_integration_creation() {
+        // Test that we can create a vectorizer integration
+        let vectorizer = VectorizerIntegration::new().await;
+        assert!(vectorizer.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_vectorizer_dummy_creation() {
+        // Test that we can create a dummy vectorizer
+        let vectorizer = VectorizerIntegration::new_dummy();
+        assert_eq!(vectorizer.base_url, "http://localhost:15002");
+        assert_eq!(vectorizer.collection, "task-interactions");
+    }
+
+    #[tokio::test]
+    async fn test_task_context_creation() {
+        // Test that we can create a task context for vectorizer
+        let task = Task::new("test-task")
+            .with_command("echo 'test'")
+            .with_type(TaskType::Simple);
+        
+        let context = TaskContext {
+            task_id: uuid::Uuid::new_v4(),
+            project: Some("test-project".to_string()),
+            execution_time: std::time::Duration::from_secs(5),
+            result: TaskResult::Success {
+                output: "Test completed".to_string(),
+                artifacts: vec!["test-output".to_string()],
+                metrics: TaskMetrics {
+                    execution_time: std::time::Duration::from_secs(5),
+                    memory_usage: 1024,
+                    cpu_usage: 0.5,
+                    disk_usage: 2048,
+                    network_io: 512,
+                },
+            },
+            artifacts: vec!["test-output".to_string()],
+            dependencies: vec![],
+            logs: vec!["Test log entry".to_string()],
+            parameters: std::collections::HashMap::from([("test".to_string(), serde_json::Value::Bool(true))]),
+        };
+
+        // Test that context can be serialized
+        let json = serde_json::to_string(&context).unwrap();
+        assert!(json.contains("test-project"));
+    }
+
+    #[tokio::test]
+    async fn test_vectorizer_payload_creation() {
+        // Test that we can create the correct payload format for vectorizer
+        let context = TaskContext {
+            task_id: uuid::Uuid::new_v4(),
+            project: Some("test-project".to_string()),
+            execution_time: std::time::Duration::from_secs(5),
+            result: TaskResult::Success {
+                output: "Test completed".to_string(),
+                artifacts: vec!["test-output".to_string()],
+                metrics: TaskMetrics {
+                    execution_time: std::time::Duration::from_secs(5),
+                    memory_usage: 1024,
+                    cpu_usage: 0.5,
+                    disk_usage: 2048,
+                    network_io: 512,
+                },
+            },
+            artifacts: vec!["test-output".to_string()],
+            dependencies: vec![],
+            logs: vec!["Test log entry".to_string()],
+            parameters: std::collections::HashMap::from([("test".to_string(), serde_json::Value::Bool(true))]),
+        };
+
+        let vectorizer = VectorizerIntegration::new_dummy();
+        let text = vectorizer.create_context_text(&context);
+        
+        // Verify that the text contains expected information
+        assert!(text.contains("test-project"));
+        assert!(text.contains("Test completed"));
+        assert!(text.contains("SUCCESS"));
+    }
+}
